@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Accessibility Test - No Black Text</title>
+    <link rel="stylesheet" href="index.css">
+    <style>
+        .test-section {
+            margin: 20px;
+            padding: 20px;
+            border: 1px solid #4b5563;
+            border-radius: 8px;
+        }
+        .test-input {
+            margin: 10px 0;
+            padding: 8px;
+            border: 1px solid #4b5563;
+            border-radius: 4px;
+            background-color: #374151;
+            color: #f3f4f6;
+            width: 100%;
+        }
+        .test-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        .test-input::placeholder {
+            color: #9ca3af;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100">
+    <div class="p-4">
+        <h1 class="text-2xl font-bold mb-4">Accessibility Test - No Black Text</h1>
+        
+        <div class="test-section">
+            <h2 class="text-xl font-semibold mb-2">Input Fields Test</h2>
+            <p class="mb-4">All input fields should have light text on dark backgrounds:</p>
+            
+            <div class="mb-4">
+                <label class="block mb-2">Text Input:</label>
+                <input type="text" class="test-input" placeholder="Type something here..." value="Sample text">
+            </div>
+            
+            <div class="mb-4">
+                <label class="block mb-2">Textarea:</label>
+                <textarea class="test-input" rows="3" placeholder="Type multiple lines here...">Sample textarea content</textarea>
+            </div>
+            
+            <div class="mb-4">
+                <label class="block mb-2">Select:</label>
+                <select class="test-input">
+                    <option>Option 1</option>
+                    <option>Option 2</option>
+                    <option>Option 3</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2 class="text-xl font-semibold mb-2">Color Classes Test</h2>
+            <p class="mb-4">All text should be visible on dark backgrounds:</p>
+            
+            <div class="space-y-2">
+                <div class="text-white">White text</div>
+                <div class="text-gray-100">Gray 100 text</div>
+                <div class="text-gray-200">Gray 200 text</div>
+                <div class="text-gray-300">Gray 300 text</div>
+                <div class="text-green-400">Green text</div>
+                <div class="text-yellow-400">Yellow text</div>
+                <div class="text-cyan-400">Cyan text</div>
+                <div class="text-violet-400">Violet text</div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2 class="text-xl font-semibold mb-2">Button Test</h2>
+            <p class="mb-4">All buttons should have proper contrast:</p>
+            
+            <div class="space-x-4">
+                <button class="btn btn-primary">Primary Button</button>
+                <button class="btn btn-secondary">Secondary Button</button>
+                <button class="btn btn-danger">Danger Button</button>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2 class="text-xl font-semibold mb-2">Component Styles Test</h2>
+            <p class="mb-4">Component-specific styles should work:</p>
+            
+            <div class="terminal mb-4">
+                <div>Terminal component with monospace font</div>
+                <div class="text-green-400">$ echo "Hello World"</div>
+            </div>
+            
+            <div class="config-panel mb-4">
+                <div>Config panel with proper styling</div>
+            </div>
+            
+            <div class="history-panel mb-4">
+                <div>History panel with scrollable content</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html> 
