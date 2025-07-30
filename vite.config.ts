@@ -12,6 +12,28 @@ export default defineConfig(({ mode }) => {
         alias: {
           '@': path.resolve(__dirname, '.'),
         }
-      }
+      },
+      build: {
+        rollupOptions: {
+          output: {
+            assetFileNames: (assetInfo) => {
+              const info = assetInfo.name.split('.');
+              const ext = info[info.length - 1];
+              if (/\.(css)$/.test(assetInfo.name)) {
+                return `assets/[name]-[hash][extname]`;
+              }
+              if (/\.(png|jpe?g|svg|gif|tiff|bmp|ico)$/i.test(assetInfo.name)) {
+                return `assets/images/[name]-[hash][extname]`;
+              }
+              return `assets/[name]-[hash][extname]`;
+            },
+          },
+        },
+      },
+      server: {
+        headers: {
+          'X-Content-Type-Options': 'nosniff',
+        },
+      },
     };
 });

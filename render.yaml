@@ -1,0 +1,44 @@
+services:
+  - type: web
+    name: skygemai
+    env: static
+    buildCommand: npm run build
+    staticPublishPath: ./dist
+    routes:
+      - type: rewrite
+        source: /(.*)
+        destination: /index.html
+    headers:
+      - path: /(.*\.css)$
+        name: Content-Type
+        value: text/css
+      - path: /(.*\.js)$
+        name: Content-Type
+        value: application/javascript
+      - path: /(.*\.tsx)$
+        name: Content-Type
+        value: application/javascript
+      - path: /(.*\.ts)$
+        name: Content-Type
+        value: application/javascript
+      - path: /(.*\.json)$
+        name: Content-Type
+        value: application/json
+      - path: /(.*\.svg)$
+        name: Content-Type
+        value: image/svg+xml
+      - path: /(.*\.png)$
+        name: Content-Type
+        value: image/png
+      - path: /(.*\.jpg)$
+        name: Content-Type
+        value: image/jpeg
+      - path: /(.*\.jpeg)$
+        name: Content-Type
+        value: image/jpeg
+      - path: /(.*\.gif)$
+        name: Content-Type
+        value: image/gif
+      - path: /(.*\.ico)$
+        name: Content-Type
+        value: image/x-icon 
