@@ -1,0 +1,5 @@
+{
+  "name": "SkynetAI",
+  "description": "SkynetAI is an AI-powered assistant that uses a team of configurable agents to analyze, modify, and test public GitHub repositories. Coordinate a master AI (AgentSmith) and specialized agents for research, architecture, testing, and documentation to perform complex coding tasks.",
+  "requestFramePermissions": []
+}
