@@ -13,6 +13,9 @@ export default defineConfig(({ mode }) => {
           '@': path.resolve(__dirname, '.'),
         }
       },
+      css: {
+        devSourcemap: true,
+      },
       build: {
         rollupOptions: {
           output: {

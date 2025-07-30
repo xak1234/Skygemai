@@ -2,7 +2,7 @@ services:
   - type: web
     name: skygemai
     env: static
-    buildCommand: npm run build
+    buildCommand: npm install && npm run build
     staticPublishPath: ./dist
     routes:
       - type: rewrite
@@ -13,12 +13,6 @@ services:
         name: Content-Type
         value: text/css
       - path: /(.*\.js)$
-        name: Content-Type
-        value: application/javascript
-      - path: /(.*\.tsx)$
-        name: Content-Type
-        value: application/javascript
-      - path: /(.*\.ts)$
         name: Content-Type
         value: application/javascript
       - path: /(.*\.json)$
