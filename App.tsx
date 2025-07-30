@@ -5,7 +5,7 @@ import { WorkspaceView } from './components/WorkspaceView';
 import { HistoryPanel } from './components/HistoryPanel';
 import { Terminal } from './components/Terminal';
 import { Agent, Message, AgentSmithDecision } from './types';
-import { getAgentSmithDecision, executeAgentTask, askQuestion } from './services/geminiService';
+import { getAgentSmithDecision, executeAgentTask, askQuestion } from './services/aiService';
 import * as firebaseService from './services/firebaseService';
 import { INITIAL_AGENTS, AGENT_SMITH_PROMPT, TERMINAL_HELP_TEXT } from './constants';
 import { BrainIcon, HistoryIcon } from './components/icons';
