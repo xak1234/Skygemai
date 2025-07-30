@@ -20,6 +20,9 @@ export default defineConfig(({ mode }) => {
       },
       build: {
         rollupOptions: {
+          input: {
+            main: path.resolve(__dirname, 'index.html'),
+          },
           output: {
             assetFileNames: (assetInfo) => {
               const info = assetInfo.name.split('.');
