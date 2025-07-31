@@ -22,15 +22,8 @@ app.use(cors({
 // Parse JSON bodies
 app.use(express.json());
 
-// Serve static files in production
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, 'dist')));
-  
-  // Serve index.html for all routes in production
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'dist', 'index.html'));
-  });
-}
+// Serve static files (both production and development)
+app.use(express.static(path.join(__dirname, 'dist')));
 
 // Simple proxy function
 function proxyRequest(targetUrl, req, res) {
@@ -76,12 +69,25 @@ function proxyRequest(targetUrl, req, res) {
 
 // Proxy for XAI API
 app.use('/api/xai', (req, res) => {
+  // Add XAI API key to the request
+  if (!req.headers.authorization) {
+    req.headers.authorization = `Bearer ${process.env.XAI_API_KEY}`;
+  }
   proxyRequest('https://api.x.ai', req, res);
 });
 
 // Proxy for DeepSeek API
 app.use('/api/deepseek', (req, res) => {
+  // Add DeepSeek API key to the request
+  if (!req.headers.authorization) {
+    req.headers.authorization = `Bearer ${process.env.DEEPSEEK_API_KEY}`;
+  }
   proxyRequest('https://api.deepseek.com/v1', req, res);
+});
+
+// Serve index.html for all other routes (SPA fallback)
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
 app.listen(PORT, () => {

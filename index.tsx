@@ -32,15 +32,9 @@ class AgentSmithOpsHub {
   private history: { role: string; content: string }[] = [];
 
   constructor() {
-    if (!process.env.XAI_API_KEY) {
-      throw new Error("XAI_API_KEY environment variable not set");
-    }
-    if (!process.env.DEEPSEEK_API_KEY) {
-      throw new Error("DEEPSEEK_API_KEY environment variable not set");
-    }
-    
-    this.xaiApiKey = process.env.XAI_API_KEY;
-    this.deepseekApiKey = process.env.DEEPSEEK_API_KEY;
+    // API keys are handled server-side via proxy
+    this.xaiApiKey = '';
+    this.deepseekApiKey = '';
 
     this.terminal = document.getElementById('terminal')!;
     this.startBtn = document.getElementById('start-btn') as HTMLButtonElement;
@@ -124,7 +118,6 @@ class AgentSmithOpsHub {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.xaiApiKey}`,
           'Accept': 'application/json'
         },
         body: JSON.stringify({
@@ -194,7 +187,6 @@ class AgentSmithOpsHub {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${this.deepseekApiKey}`,
                 'Accept': 'application/json'
             },
             body: JSON.stringify({
