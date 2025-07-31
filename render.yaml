@@ -12,6 +12,9 @@ services:
       - path: /(.*\.js)$
         name: Content-Type
         value: application/javascript
+      - path: /(.*\.mjs)$
+        name: Content-Type
+        value: application/javascript
       - path: /(.*\.json)$
         name: Content-Type
         value: application/json
@@ -32,4 +35,7 @@ services:
         value: image/gif
       - path: /(.*\.ico)$
         name: Content-Type
-        value: image/x-icon 
+        value: image/x-icon
+      - path: /(.*\.html)$
+        name: Content-Type
+        value: text/html 

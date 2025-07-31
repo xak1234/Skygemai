@@ -1,6 +1,7 @@
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -15,6 +16,8 @@ app.use(express.static(path.join(__dirname, 'dist'), {
       res.setHeader('Content-Type', 'text/css');
     } else if (filePath.endsWith('.js')) {
       res.setHeader('Content-Type', 'application/javascript');
+    } else if (filePath.endsWith('.mjs')) {
+      res.setHeader('Content-Type', 'application/javascript');
     } else if (filePath.endsWith('.json')) {
       res.setHeader('Content-Type', 'application/json');
     } else if (filePath.endsWith('.svg')) {
@@ -27,15 +30,36 @@ app.use(express.static(path.join(__dirname, 'dist'), {
       res.setHeader('Content-Type', 'image/gif');
     } else if (filePath.endsWith('.ico')) {
       res.setHeader('Content-Type', 'image/x-icon');
+    } else if (filePath.endsWith('.html')) {
+      res.setHeader('Content-Type', 'text/html');
     }
   }
 }));
 
 // Handle SPA routing - serve index.html for all routes
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+  const indexPath = path.join(__dirname, 'dist', 'index.html');
+  
+  // Check if index.html exists
+  if (!fs.existsSync(indexPath)) {
+    console.error('index.html not found in dist directory');
+    res.status(500).send('Build files not found. Please ensure the application is built correctly.');
+    return;
+  }
+  
+  res.sendFile(indexPath);
 });
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
+  console.log(`Serving static files from: ${path.join(__dirname, 'dist')}`);
+  
+  // Log available files for debugging
+  if (fs.existsSync(path.join(__dirname, 'dist'))) {
+    console.log('Available files in dist:');
+    const files = fs.readdirSync(path.join(__dirname, 'dist'));
+    files.forEach(file => {
+      console.log(`  - ${file}`);
+    });
+  }
 }); 
