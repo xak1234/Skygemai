@@ -58,15 +58,18 @@ function proxyRequest(targetUrl, req, res) {
   
   // Handle path transformation
   let targetPath = req.url;
-  if (req.url.startsWith('/api/xai')) {
-    targetPath = req.url.replace('/api/xai', '');
-  } else if (req.url.startsWith('/api/deepseek')) {
+  if (req.url.startsWith('/api/deepseek')) {
     targetPath = req.url.replace('/api/deepseek', '');
   }
   
   // For XAI API, we need to handle the path differently since we're already pointing to /v1
-  if (req.url.startsWith('/api/xai') && targetPath.startsWith('/v1/')) {
-    targetPath = targetPath.replace('/v1/', '/');
+  if (req.url.startsWith('/api/xai')) {
+    // Remove the /api/xai prefix
+    targetPath = req.url.replace('/api/xai', '');
+    // If the path starts with /v1/, remove the /v1/ prefix since we're already pointing to /v1
+    if (targetPath.startsWith('/v1/')) {
+      targetPath = targetPath.replace('/v1/', '/');
+    }
   }
   
   // Clean headers for proxy
