@@ -5,6 +5,9 @@ import { fileURLToPath } from 'url';
 import https from 'https';
 import http from 'http';
 import OpenAI from 'openai';
+import helmet from 'helmet';
+import winston from 'winston';
+import { z } from 'zod';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -12,186 +15,274 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Initialize X.AI client
-let xaiClient = null;
-if (process.env.XAI_API_KEY) {
-  xaiClient = new OpenAI({
-    baseURL: "https://api.x.ai/v1",
-    apiKey: process.env.XAI_API_KEY,
-  });
+// Initialize Logger
+const logger = winston.createLogger({
+  level: 'info',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.json()
+  ),
+  transports: [
+    new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
+    new winston.transports.File({ filename: 'logs/combined.log' }),
+    new winston.transports.Console()
+  ]
+});
+
+// Environment Validation
+const envSchema = z.object({
+  XAI_API_KEY: z.string().min(1, 'XAI_API_KEY is required'),
+  DEEPSEEK_API_KEY: z.string().min(1, 'DEEPSEEK_API_KEY is required').optional(),
+  NODE_ENV: z.enum(['development', 'production']).default('production'),
+  PORT: z.string().optional()
+});
+
+try {
+  envSchema.parse(process.env);
+} catch (error) {
+  logger.error('Environment variable validation failed:', error);
+  process.exit(1);
 }
 
-// Enable CORS for all routes
+// Agent Pool
+const agents = [
+  {
+    name: 'xai-primary',
+    type: 'xai',
+    url: 'https://api.x.ai/v1',
+    health: true,
+    lastUsed: 0,
+    client: process.env.XAI_API_KEY ? new OpenAI({
+      baseURL: 'https://api.x.ai/v1',
+      apiKey: process.env.XAI_API_KEY
+    }) : null
+  },
+  {
+    name: 'deepseek',
+    type: 'deepseek',
+    url: 'https://api.deepseek.com/v1',
+    health: process.env.DEEPSEEK_API_KEY ? true : false,
+    lastUsed: 0,
+    client: null
+  }
+];
+
+// Health Check for Agents
+async function checkAgentHealth(agent) {
+  try {
+    const url = new URL(agent.url);
+    const client = url.protocol === 'https:' ? https : http;
+    await new Promise((resolve) => {
+      client.get(`${agent.url}/health`, { timeout: 5000 }, (res) => {
+        agent.health = res.statusCode === 200;
+        resolve();
+      }).on('error', () => {
+        agent.health = false;
+        resolve();
+      });
+    });
+  } catch {
+    agent.health = false;
+  }
+  logger.info('Agent health check', { agent: agent.name, health: agent.health });
+}
+
+// Periodically check agent health
+setInterval(async () => {
+  for (const agent of agents) {
+    await checkAgentHealth(agent);
+  }
+}, 60000);
+
+// Request Analysis
+function analyzeRequest(reqBody) {
+  const schema = z.object({
+    messages: z.array(z.object({
+      role: z.enum(['system', 'user', 'assistant']),
+      content: z.string().min(1)
+    })).min(1),
+    temperature: z.number().min(0).max(2).optional(),
+    max_tokens: z.number().int().positive().optional(),
+    stream: z.boolean().optional(),
+    top_p: z.number().min(0).max(1).optional()
+  });
+
+  try {
+    const validated = schema.parse(reqBody);
+    const totalLength = validated.messages.reduce((sum, msg) => sum + msg.content.length, 0);
+    return {
+      isValid: true,
+      complexity: totalLength > 1000 ? 'high' : totalLength > 500 ? 'medium' : 'low',
+      requiresDeepseek: validated.messages.some(msg => msg.content.toLowerCase().includes('deepseek')),
+      validated
+    };
+  } catch (error) {
+    return { isValid: false, error };
+  }
+}
+
+// Select Agents
+function selectAgents(analysis) {
+  const availableAgents = agents.filter(agent => agent.health && (agent.client || agent.type === 'deepseek'));
+  if (!availableAgents.length) {
+    throw new Error('No healthy agents available');
+  }
+
+  if (analysis.complexity === 'high') {
+    return availableAgents; // Use all agents for high complexity
+  } else if (analysis.requiresDeepseek && availableAgents.some(a => a.type === 'deepseek')) {
+    return availableAgents.filter(a => a.type === 'deepseek');
+  } else {
+    return availableAgents.filter(a => a.type === 'xai').slice(0, 1); // Default to one XAI agent
+  }
+}
+
+// Execute Task
+async function executeTask(agent, reqBody, validatedBody) {
+  try {
+    if (agent.type === 'xai' && agent.client) {
+      const completion = await agent.client.chat.completions.create({
+        model: 'grok-4-0709',
+        messages: validatedBody.messages,
+        temperature: validatedBody.temperature || 0,
+        max_tokens: validatedBody.max_tokens,
+        stream: validatedBody.stream || false,
+        top_p: validatedBody.top_p
+      });
+      agent.lastUsed = Date.now();
+      return { agent: agent.name, result: completion, success: true };
+    } else if (agent.type === 'deepseek' && process.env.DEEPSEEK_API_KEY) {
+      return new Promise((resolve, reject) => {
+        const url = new URL(agent.url);
+        const cleanPath = (url.pathname + '/chat/completions').replace(/\/+/g, '/');
+        const headers = {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`,
+          'Host': url.hostname
+        };
+
+        const options = {
+          hostname: url.hostname,
+          port: 443,
+          path: cleanPath,
+          method: 'POST',
+          headers,
+          timeout: 10000
+        };
+
+        const proxyReq = https.request(options, (proxyRes) => {
+          let data = '';
+          proxyRes.on('data', chunk => data += chunk);
+          proxyRes.on('end', () => {
+            agent.lastUsed = Date.now();
+            resolve({ agent: agent.name, result: JSON.parse(data), success: true });
+          });
+        });
+
+        proxyReq.on('error', (err) => reject(err));
+        proxyReq.write(JSON.stringify(reqBody));
+        proxyReq.end();
+      });
+    }
+    throw new Error(`Unsupported or unconfigured agent: ${agent.name}`);
+  } catch (error) {
+    return { agent: agent.name, success: false, error: error.message };
+  }
+}
+
+// Middleware
+app.use(helmet());
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://skygemaix.onrender.com', 'https://*.onrender.com']
-    : ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175', 'http://localhost:3001'],
+  origin: ['https://skygemaix.onrender.com'],
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With', 'Cookie'],
-  exposedHeaders: ['Set-Cookie'],
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
   preflightContinue: false,
   optionsSuccessStatus: 204
 }));
-
-// Parse JSON bodies
 app.use(express.json());
 
-// Add security headers and handle cookies
+// Request Logging
 app.use((req, res, next) => {
-  // Set security headers
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'DENY');
-  res.setHeader('X-XSS-Protection', '1; mode=block');
-  
-  // Handle cookie domain issues
-  if (req.headers.cookie) {
-    // Clean up problematic cookies
-    const cookies = req.headers.cookie.split(';').filter(cookie => {
-      const [name] = cookie.trim().split('=');
-      return !name.includes('__cf_bm') && !name.includes('__cf_clearance');
-    });
-    req.headers.cookie = cookies.join(';');
-  }
-  
-  // Set SameSite cookie policy
-  res.setHeader('Set-Cookie', 'SameSite=Strict');
-  
+  logger.info('Incoming request', {
+    method: req.method,
+    url: req.url,
+    ip: req.ip
+  });
   next();
 });
 
-// Note: Static files will be served after API routes
-
-// Simple proxy function
-function proxyRequest(targetUrl, req, res) {
-  const url = new URL(targetUrl);
-  
-  // Handle path transformation
-  let targetPath = req.url;
-  if (req.url.startsWith('/api/deepseek')) {
-    targetPath = req.url.replace('/api/deepseek', '');
-  }
-  
-  // Clean headers for proxy
-  const cleanHeaders = { ...req.headers };
-  delete cleanHeaders.host;
-  delete cleanHeaders.origin;
-  delete cleanHeaders.referer;
-  
-  // Remove problematic cookies
-  if (cleanHeaders.cookie) {
-    const cookies = cleanHeaders.cookie.split(';').filter(cookie => {
-      const [name] = cookie.trim().split('=');
-      return !name.includes('__cf_bm') && !name.includes('__cf_clearance');
-    });
-    cleanHeaders.cookie = cookies.join(';');
-  }
-  
-  // Fix double slash issue
-  const fullPath = url.pathname + targetPath;
-  const cleanPath = fullPath.replace(/\/+/g, '/'); // Replace multiple slashes with single slash
-  
-  const options = {
-    hostname: url.hostname,
-    port: url.port || (url.protocol === 'https:' ? 443 : 80),
-    path: cleanPath,
-    method: req.method,
-    headers: {
-      ...cleanHeaders,
-      host: url.hostname
-    }
-  };
-
-  // Debug logging
-  console.log(`Proxying to: ${url.protocol}//${url.hostname}${cleanPath}`);
-  console.log(`API Key length: ${process.env.XAI_API_KEY ? process.env.XAI_API_KEY.length : 0}`);
-
-  const client = url.protocol === 'https:' ? https : http;
-  
-  const proxyReq = client.request(options, (proxyRes) => {
-    console.log(`Proxy response status: ${proxyRes.statusCode}`);
-    res.writeHead(proxyRes.statusCode, proxyRes.headers);
-    proxyRes.pipe(res);
-  });
-
-  proxyReq.on('error', (err) => {
-    console.error('Proxy error:', err);
-    res.status(500).json({ error: 'Proxy error' });
-  });
-
-  if (req.body) {
-    proxyReq.write(JSON.stringify(req.body));
-  }
-  
-  req.pipe(proxyReq);
-}
-
-// X.AI API endpoint using OpenAI client
-app.post('/api/xai/v1/chat/completions', async (req, res) => {
+// Unified API Endpoint
+app.post('/api/chat/completions', async (req, res, next) => {
   try {
-    if (!xaiClient) {
-      return res.status(500).json({ 
-        error: 'XAI API key not configured. Please set XAI_API_KEY environment variable.' 
-      });
+    const analysis = analyzeRequest(req.body);
+    if (!analysis.isValid) {
+      throw analysis.error;
     }
 
-    console.log('XAI API request:', req.body);
-    
-    const completion = await xaiClient.chat.completions.create({
-      model: "grok-4-0709",
-      messages: req.body.messages,
-      temperature: req.body.temperature || 0,
-      max_tokens: req.body.max_tokens,
-      stream: req.body.stream || false,
-      top_p: req.body.top_p
+    logger.info('Request analysis', {
+      complexity: analysis.complexity,
+      requiresDeepseek: analysis.requiresDeepseek
     });
 
-    console.log('XAI API response:', completion);
-    res.json(completion);
+    const selectedAgents = selectAgents(analysis);
+    logger.info('Selected agents', { agents: selectedAgents.map(a => a.name) });
+
+    // Execute tasks in parallel
+    const results = await Promise.all(
+      selectedAgents.map(agent => executeTask(agent, req.body, analysis.validated))
+    );
+
+    // Filter successful results
+    const successfulResults = results.filter(r => r.success);
+    if (!successfulResults.length) {
+      throw new Error('All agents failed to process the request');
+    }
+
+    logger.info('Task results', {
+      results: results.map(r => ({
+        agent: r.agent,
+        success: r.success,
+        choices: r.result?.choices?.length
+      }))
+    });
+
+    // Return first successful result
+    res.json({ status: 'success', data: successfulResults[0].result });
   } catch (error) {
-    console.error('XAI API error:', error);
-    res.status(500).json({ 
-      error: `XAI API error: ${error.message}` 
-    });
+    next(error);
   }
 });
 
-// Proxy for DeepSeek API
-app.use('/api/deepseek', (req, res) => {
-  // Check if API key is available
-  if (!process.env.DEEPSEEK_API_KEY) {
-    console.log('DEEPSEEK_API_KEY environment variable not set');
-    return res.status(500).json({ 
-      error: 'DeepSeek API key not configured. Please set DEEPSEEK_API_KEY environment variable.' 
-    });
-  }
-  
-  // Add DeepSeek API key to the request
-  if (!req.headers.authorization) {
-    req.headers.authorization = `Bearer ${process.env.DEEPSEEK_API_KEY}`;
-  }
-  proxyRequest('https://api.deepseek.com/v1', req, res);
-});
-
-// Handle Cloudflare cookie issues
-app.get('/__cf_bm', (req, res) => {
-  res.status(200).json({ message: 'Cookie handled' });
-});
-
-// Handle other Cloudflare-related paths
-app.get('/__cf_clearance', (req, res) => {
-  res.status(200).json({ message: 'Clearance handled' });
-});
-
-// Serve static files (after API routes)
+// Serve Static Files
 app.use(express.static(path.join(__dirname, 'dist')));
 
-// Serve index.html for all other routes (SPA fallback)
+// SPA Fallback
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
+// Error Handling Middleware
+app.use((err, req, res, next) => {
+  logger.error('Application error:', {
+    error: err.message,
+    stack: err.stack,
+    url: req.url,
+    method: req.method
+  });
+
+  if (err instanceof z.ZodError) {
+    return res.status(400).json({ error: 'Invalid request data', details: err.errors });
+  }
+
+  res.status(500).json({
+    error: 'Internal server error',
+    details: process.env.NODE_ENV === 'development' ? err.message : undefined
+  });
+});
+
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  logger.info(`Server running on port ${PORT}`, {
+    environment: process.env.NODE_ENV || 'production'
+  });
 }); 

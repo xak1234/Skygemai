@@ -1,168 +1,191 @@
 # AgentSmith Ops Hub
 
-A multi-agent AI orchestration system for intelligent software project analysis and optimization.
+A sophisticated AI agent orchestration system that intelligently routes requests across multiple AI providers (X.AI and DeepSeek) with advanced health monitoring, request analysis, and load balancing capabilities.
 
-## 🚀 Live Demo
+## 🚀 Features
 
-**Live Demo**: [https://skygemaix.onrender.com](https://skygemaix.onrender.com)
+### **Intelligent Agent Management**
+- **Multi-Agent Pool**: Supports X.AI (Grok-4) and DeepSeek AI providers
+- **Health Monitoring**: Automatic health checks every 60 seconds
+- **Load Balancing**: Intelligent agent selection based on request complexity
+- **Failover**: Automatic failover to healthy agents
 
-## 🧠 Features
+### **Request Analysis & Routing**
+- **Complexity Analysis**: Analyzes request length and content to determine complexity
+- **Smart Routing**: Routes requests to appropriate agents based on:
+  - Request complexity (low/medium/high)
+  - Specific provider requirements
+  - Agent health status
+- **Parallel Processing**: High-complexity requests use multiple agents simultaneously
 
-### **Intelligent Agent Orchestration**
-- **AgentSmith (Controller)**: Uses XAI (Grok) for strategic decision-making
-- **Debugger Agent**: Security vulnerability scanning and code quality analysis
-- **Optimizer Agent**: Performance optimization and architectural improvements  
-- **Fixer Agent**: Code implementation and security patches
-- **CodeManiac Agent**: Creative solutions, novel approaches, and innovative patterns
+### **Security & Monitoring**
+- **Comprehensive Logging**: Winston-based logging with file and console output
+- **Security Headers**: Helmet.js for enhanced security
+- **Input Validation**: Zod schema validation for all requests
+- **Error Handling**: Robust error handling with detailed logging
 
-### **Smart File Access System**
-- **Project Cloning**: Simulates repository cloning for analysis
-- **File Content Access**: Agents receive actual code files for detailed analysis
-- **Relevant File Detection**: Automatically identifies files related to specific tasks
-- **Security & Performance Issues**: Pre-built sample files with real vulnerabilities
+### **Performance Optimizations**
+- **Connection Pooling**: Efficient agent connection management
+- **Timeout Handling**: Configurable timeouts for all operations
+- **Response Caching**: Intelligent response handling and caching
 
-### **Anti-Repetition Intelligence**
-- **FORCE_PROGRESSION**: Prevents agents from getting stuck in loops
-- **Balanced Agent Usage**: Ensures all three agents are utilized effectively
-- **Smart Phase Detection**: Tracks analysis progress and forces progression
-- **Maximum Iteration Limits**: Prevents infinite analysis loops
+## 🛠️ Installation
 
-## 🛠️ Setup
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd agentsmith-ops-hub
+   ```
 
-### **Environment Variables**
-Create a `.env.local` file with your API keys:
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-```bash
-XAI_API_KEY=your_xai_api_key_here
-DEEPSEEK_API_KEY=your_deepseek_api_key_here
+3. **Set up environment variables**
+   ```bash
+   # Required
+   XAI_API_KEY=your_xai_api_key_here
+   
+   # Optional (for DeepSeek support)
+   DEEPSEEK_API_KEY=your_deepseek_api_key_here
+   
+   # Optional
+   NODE_ENV=production
+   PORT=3001
+   ```
+
+4. **Build the frontend**
+   ```bash
+   npm run build
+   ```
+
+5. **Start the server**
+   ```bash
+   npm start
+   ```
+
+## 📡 API Usage
+
+### Unified Chat Completions Endpoint
+
+**Endpoint**: `POST /api/chat/completions`
+
+**Request Body**:
+```json
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hello, how are you?"
+    }
+  ],
+  "temperature": 0.7,
+  "max_tokens": 1000,
+  "stream": false,
+  "top_p": 0.9
+}
 ```
 
-### **Installation**
-```bash
-npm install
-npm run dev
+**Response**:
+```json
+{
+  "status": "success",
+  "data": {
+    "choices": [
+      {
+        "message": {
+          "role": "assistant",
+          "content": "Hello! I'm doing well, thank you for asking..."
+        }
+      }
+    ]
+  }
+}
 ```
 
-### **Development Server**
-```bash
-npm run dev
-```
+## 🔧 Configuration
 
-### **Production Build**
-```bash
-npm run build
-npm start
-```
+### Environment Variables
 
-## 🏗️ Architecture
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `XAI_API_KEY` | Yes | X.AI API key for Grok-4 access |
+| `DEEPSEEK_API_KEY` | No | DeepSeek API key for additional AI provider |
+| `NODE_ENV` | No | Environment (development/production) |
+| `PORT` | No | Server port (default: 3001) |
 
-### **Dual AI System**
-- **XAI (Grok)**: AgentSmith controller for strategic decisions
-- **DeepSeek**: Worker agents for detailed code analysis
+### Agent Configuration
 
-### **File Access Layer**
-- **Project Files**: 10+ sample files with real security/performance issues
-- **Smart Detection**: Automatically selects relevant files for each task
-- **Content Formatting**: Provides structured file content to agents
+The system automatically configures agents based on available API keys:
 
-### **Agent Intelligence**
-- **Phase Detection**: Tracks analysis progress (Initial → Security → Performance → Implementation → Creative → Review)
-- **Anti-Repetition**: Forces progression when agents get stuck
-- **Context Awareness**: Provides file content and analysis history to agents
-- **Creative Solutions**: CodeManiac provides innovative approaches with higher temperature (0.7)
+- **X.AI Agent**: Uses Grok-4 model, configured when `XAI_API_KEY` is present
+- **DeepSeek Agent**: Configured when `DEEPSEEK_API_KEY` is present
 
-## 📊 Sample Project Files
+## 📊 Monitoring & Logs
 
-The system includes sample files with real issues for analysis:
+### Log Files
+- `logs/error.log`: Error-level logs
+- `logs/combined.log`: All application logs
 
-- **`auth.js`**: SQL injection vulnerability, weak validation
-- **`models/user.js`**: Missing database indexes
-- **`routes/api.js`**: No authentication, N+1 query issues
-- **`middleware/validation.js`**: Weak input validation
-- **`config/database.js`**: No connection pooling
-- **`utils/helpers.js`**: Inefficient algorithms, O(n²) complexity
+### Health Monitoring
+- Automatic health checks every 60 seconds
+- Agent status tracking
+- Performance metrics logging
 
 ## 🚀 Deployment
 
-### **Render Deployment**
-1. **Connect to Render**: Push code to GitHub and connect to Render
-2. **Environment Variables**: Set `XAI_API_KEY` and `DEEPSEEK_API_KEY`
-3. **Build Command**: `npm ci && npm run build`
-4. **Start Command**: `npm start`
+### Render.com
+The application is configured for deployment on Render.com with the provided `render.yaml` file.
 
-### **Environment Variables for Render**
-- `NODE_ENV`: `production`
-- `XAI_API_KEY`: Your XAI API key
-- `DEEPSEEK_API_KEY`: Your DeepSeek API key
+### Environment Setup
+1. Set required environment variables in your deployment platform
+2. Ensure the `logs` directory is writable
+3. Build the application before deployment
 
-## 🔧 Technical Details
+## 🔍 Request Analysis Logic
 
-### **API Integration**
-- **XAI Proxy**: `/api/xai/v1/chat/completions`
-- **DeepSeek Proxy**: `/api/deepseek/chat/completions`
-- **Custom Proxy Server**: Handles CORS and API routing
+### Complexity Levels
+- **Low**: < 500 characters
+- **Medium**: 500-1000 characters  
+- **High**: > 1000 characters
 
-### **Agent Communication**
-- **Ultra-Fast**: Low `max_tokens`, `temperature: 0.0`, no streaming
-- **Precise**: Optimized prompts for speed and accuracy
-- **Contextual**: File content and analysis history provided
+### Agent Selection
+- **Low Complexity**: Single X.AI agent
+- **Medium Complexity**: Single X.AI agent
+- **High Complexity**: All available agents (parallel processing)
+- **DeepSeek Requests**: Routes to DeepSeek when explicitly requested
 
-### **File System Simulation**
-- **Project Cloning**: Simulates git clone operation
-- **File Loading**: Loads sample files with real issues
-- **Content Access**: Provides actual code to agents for analysis
+## 🛡️ Security Features
 
-## 🎯 Use Cases
+- **CORS Protection**: Configured for specific origins
+- **Security Headers**: Helmet.js implementation
+- **Input Validation**: Zod schema validation
+- **Error Sanitization**: Safe error responses in production
 
-### **Security Analysis**
-- SQL injection detection
-- XSS vulnerability scanning
-- Authentication flaw identification
-- Input validation assessment
+## 📈 Performance
 
-### **Performance Optimization**
-- N+1 query detection
-- Memory leak identification
-- Algorithm complexity analysis
-- Database optimization
+- **Parallel Processing**: High-complexity requests use multiple agents
+- **Connection Pooling**: Efficient HTTP connection management
+- **Timeout Handling**: 10-second timeout for external API calls
+- **Health Monitoring**: Continuous agent health tracking
 
-### **Code Quality**
-- Maintainability assessment
-- Complexity analysis
-- Best practice validation
-- Architectural review
+## 🤝 Contributing
 
-### **Creative Solutions**
-- Innovative architectural patterns
-- Novel security approaches
-- Experimental optimizations
-- Futuristic programming paradigms
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
 
-## 📈 Recent Improvements
+## 📄 License
 
-### **AgentSmith Intelligence**
-- ✅ Enhanced phase detection with FORCE_PROGRESSION
-- ✅ Anti-repetition logic prevents Debugger loops
-- ✅ Better worker assignment with fallback to Optimizer
-- ✅ Improved context awareness in decision making
-- ✅ Maximum iteration limits prevent infinite loops
+This project is licensed under the MIT License.
 
-### **File Access System**
-- ✅ Project files loaded for agent analysis
-- ✅ Relevant file detection based on task type
-- ✅ File content formatting for detailed analysis
-- ✅ Security and performance issues in sample files
-- ✅ Agents now have access to actual code content
+## 🆘 Support
 
-### **CodeManiac Agent (New)**
-- ✅ **Creative Temperature**: Higher temperature (0.7) for innovative responses
-- ✅ **Novel Approaches**: Unconventional solutions and cutting-edge patterns
-- ✅ **Experimental Optimizations**: WebAssembly, blockchain, zero-knowledge proofs
-- ✅ **Futuristic Patterns**: Reactive programming, microservices, GraphQL federation
-- ✅ **Four-Agent System**: Complete coverage from debugging to creativity
-
-## 🔗 Links
-
-- **Live Demo**: [https://skygemaix.onrender.com](https://skygemaix.onrender.com)
-- **Repository**: Your GitHub repository
-- **Render Dashboard**: Your Render service dashboard
+For issues and questions:
+1. Check the logs in the `logs/` directory
+2. Verify environment variables are set correctly
+3. Ensure API keys are valid and have sufficient credits
+4. Check agent health status in the application logs
