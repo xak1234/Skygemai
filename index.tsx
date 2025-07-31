@@ -122,7 +122,6 @@ class AgentSmithOpsHub {
           'Accept': 'application/json'
         },
         body: JSON.stringify({
-          model: 'grok-4-0709',
           messages: [
             {
               role: 'system',
@@ -147,18 +146,10 @@ class AgentSmithOpsHub {
 
         const data = await response.json();
         
-        // Handle XAI API response format
+        // Handle OpenAI-compatible response format
         let text = '';
         if (data.choices && data.choices[0] && data.choices[0].message) {
           text = data.choices[0].message.content.trim();
-        } else if (data.response) {
-          text = data.response.trim();
-        } else if (data.content) {
-          text = data.content.trim();
-        } else if (data.text) {
-          text = data.text.trim();
-        } else if (data.message) {
-          text = data.message.trim();
         } else {
           // Fallback: log the response for debugging
           this.logToTerminal('System', `Warning: Unexpected API response format: ${JSON.stringify(data).substring(0, 100)}...`);

@@ -4,12 +4,22 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import https from 'https';
 import http from 'http';
+import OpenAI from 'openai';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// Initialize X.AI client
+let xaiClient = null;
+if (process.env.XAI_API_KEY) {
+  xaiClient = new OpenAI({
+    baseURL: "https://api.x.ai/v1",
+    apiKey: process.env.XAI_API_KEY,
+  });
+}
 
 // Enable CORS for all routes
 app.use(cors({
@@ -60,16 +70,6 @@ function proxyRequest(targetUrl, req, res) {
   let targetPath = req.url;
   if (req.url.startsWith('/api/deepseek')) {
     targetPath = req.url.replace('/api/deepseek', '');
-  }
-  
-  // For XAI API, we need to handle the path differently since we're already pointing to /v1
-  if (req.url.startsWith('/api/xai')) {
-    // Remove the /api/xai prefix
-    targetPath = req.url.replace('/api/xai', '');
-    // If the path starts with /v1/, remove the /v1/ prefix since we're already pointing to /v1
-    if (targetPath.startsWith('/v1/')) {
-      targetPath = targetPath.replace('/v1/', '/');
-    }
   }
   
   // Clean headers for proxy
@@ -126,26 +126,34 @@ function proxyRequest(targetUrl, req, res) {
   req.pipe(proxyReq);
 }
 
-// Proxy for XAI API
-app.use('/api/xai', (req, res) => {
-  // Check if API key is available
-  if (!process.env.XAI_API_KEY) {
-    console.log('XAI_API_KEY environment variable not set');
-    return res.status(500).json({ 
-      error: 'XAI API key not configured. Please set XAI_API_KEY environment variable.' 
+// X.AI API endpoint using OpenAI client
+app.post('/api/xai/v1/chat/completions', async (req, res) => {
+  try {
+    if (!xaiClient) {
+      return res.status(500).json({ 
+        error: 'XAI API key not configured. Please set XAI_API_KEY environment variable.' 
+      });
+    }
+
+    console.log('XAI API request:', req.body);
+    
+    const completion = await xaiClient.chat.completions.create({
+      model: "grok-4-0709",
+      messages: req.body.messages,
+      temperature: req.body.temperature || 0,
+      max_tokens: req.body.max_tokens,
+      stream: req.body.stream || false,
+      top_p: req.body.top_p
+    });
+
+    console.log('XAI API response:', completion);
+    res.json(completion);
+  } catch (error) {
+    console.error('XAI API error:', error);
+    res.status(500).json({ 
+      error: `XAI API error: ${error.message}` 
     });
   }
-  
-  // Add XAI API key to the request
-  if (!req.headers.authorization) {
-    req.headers.authorization = `Bearer ${process.env.XAI_API_KEY}`;
-  }
-  
-  // Debug logging
-  console.log(`XAI API request: ${req.method} ${req.url}`);
-  console.log(`XAI API key present: ${!!process.env.XAI_API_KEY}`);
-  
-  proxyRequest('https://api.x.ai/v1', req, res);
 });
 
 // Proxy for DeepSeek API

@@ -1,7 +1,7 @@
 # AgentSmith Ops Hub
 
 A multi-agent AI orchestration system for analyzing, debugging, and improving software projects using dual AI APIs:
-- **AgentSmith (Controller)**: Powered by XAI (Grok-beta) for orchestration
+- **AgentSmith (Controller)**: Powered by X.AI (Grok-4-0709) for orchestration
 - **Worker Agents**: Powered by DeepSeek for specialized tasks
 
 ## Features
@@ -49,11 +49,30 @@ A multi-agent AI orchestration system for analyzing, debugging, and improving so
 ## API Configuration
 
 The app uses dual AI APIs for optimal performance:
-- **AgentSmith (XAI)**: Orchestration and decision-making using Grok-beta
+- **AgentSmith (X.AI)**: Orchestration and decision-making using Grok-4-0709 model via OpenAI-compatible client
 - **Worker Agents (DeepSeek)**: Specialized code analysis tasks using DeepSeek Coder model
   - **Agent A (Fixer)**: Code fixing and implementation
   - **Agent B (Debugger)**: Code debugging and vulnerability scanning
   - **Agent C (Optimizer)**: Performance optimization and refactoring
+
+### X.AI Integration
+
+AgentSmith now uses the OpenAI-compatible client for X.AI API calls:
+
+```javascript
+import OpenAI from "openai";
+
+const client = new OpenAI({
+  baseURL: "https://api.x.ai/v1",
+  apiKey: "<YOUR_XAI_API_KEY_HERE>",
+});
+
+const completion = await client.chat.completions.create({
+  model: "grok-4-0709",
+  messages: [...],
+  temperature: 0,
+});
+```
 
 ## Deployment
 
