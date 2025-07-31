@@ -31,18 +31,17 @@
         <div class="panel communication-panel">
           <div class="communication-header">
             <h3>💬 Direct AgentSmith Communication</h3>
-            <button id="send-instruction-btn" type="button" disabled>📤 Send Instruction</button>
           </div>
           <div class="instruction-input-group">
             <textarea
               id="instruction-input"
-              placeholder="Enter your specific instructions for AgentSmith...&#10;&#10;Examples:&#10;- Focus on security vulnerabilities in auth.js&#10;- Analyze performance bottlenecks in database queries&#10;- Implement input validation for user forms&#10;- Scan for SQL injection vulnerabilities&#10;- Optimize memory usage in image processing"
-              rows="6"
+              placeholder="Type your message here and press Enter to send...&#10;Use ↑/↓ arrows to navigate command history&#10;&#10;Examples:&#10;- Focus on security vulnerabilities in auth.js&#10;- Analyze performance bottlenecks in database queries&#10;- Implement input validation for user forms&#10;- Scan for SQL injection vulnerabilities&#10;- Optimize memory usage in image processing"
+              rows="4"
               disabled
             ></textarea>
           </div>
           <div class="instruction-history">
-            <h4>📝 Instruction History</h4>
+            <h4>📝 Chat History</h4>
             <div id="instruction-history-list"></div>
           </div>
         </div>

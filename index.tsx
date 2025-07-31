@@ -25,7 +25,6 @@ class AgentSmithOpsHub {
   private projectSourceInput: HTMLInputElement;
   private tempLocationEl: HTMLElement;
   private instructionInput: HTMLTextAreaElement;
-  private sendInstructionBtn: HTMLButtonElement;
   private instructionHistoryList: HTMLElement;
 
   // State
@@ -36,6 +35,8 @@ class AgentSmithOpsHub {
   private currentTask: string | null = null;
   private history: { role: string; content: string }[] = [];
   private instructionHistory: { timestamp: string; content: string }[] = [];
+  private commandHistory: string[] = [];
+  private currentHistoryIndex: number = -1;
 
   constructor() {
     // API keys are handled server-side via proxy
@@ -50,7 +51,6 @@ class AgentSmithOpsHub {
     this.projectSourceInput = document.getElementById('project-source') as HTMLInputElement;
     this.tempLocationEl = document.getElementById('temp-location')!;
     this.instructionInput = document.getElementById('instruction-input') as HTMLTextAreaElement;
-    this.sendInstructionBtn = document.getElementById('send-instruction-btn') as HTMLButtonElement;
     this.instructionHistoryList = document.getElementById('instruction-history-list')!;
 
     this.agents = {
@@ -82,13 +82,28 @@ class AgentSmithOpsHub {
     this.pauseBtn.addEventListener('click', () => this.togglePause());
     this.stopBtn.addEventListener('click', () => this.stopGracefully());
     this.cancelBtn.addEventListener('click', () => this.cancelImmediately());
-    this.sendInstructionBtn.addEventListener('click', () => this.sendInstruction());
     
-    // Enable instruction input on Enter key
+    // Enable instruction input on Enter key (with or without Ctrl)
     this.instructionInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && e.ctrlKey) {
+      if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         this.sendInstruction();
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        this.navigateHistory('up');
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        this.navigateHistory('down');
+      }
+    });
+    
+    // Add visual feedback for Enter
+    this.instructionInput.addEventListener('keyup', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        this.instructionInput.style.borderColor = 'var(--accent-green)';
+        setTimeout(() => {
+          this.instructionInput.style.borderColor = '';
+        }, 200);
       }
     });
   }
@@ -128,13 +143,20 @@ class AgentSmithOpsHub {
     this.setAgentStatus('smith', 'working');
     this.logToTerminal('AgentSmith', 'Planning next action...');
     
-    try {
-      const fullPrompt = `AgentSmith: You are an intelligent project orchestrator. Analyze the current state and determine the next action.
+          try {
+        // Check if we're starting fresh or continuing
+        const isStarting = this.history.length === 0;
+        const currentPhase = this.determineCurrentPhase();
+        
+        this.logToTerminal('AgentSmith', `Starting iteration ${this.history.length + 1}, Phase: ${currentPhase}`);
+        
+        const fullPrompt = `AgentSmith: You are an intelligent project orchestrator. Analyze the current state and determine the next action.
 
 PROJECT CONTEXT:
 - Project: ${this.projectSourceInput.value || 'the specified project'}
 - Temp Location: ${this.tempLocationEl.textContent}
 - Analysis History: ${this.history.map(h => `${h.role}: ${h.content}`).join(' | ')}
+- Current Phase: ${currentPhase}
 
 CURRENT TASK: ${prompt}
 
@@ -151,10 +173,13 @@ ANALYSIS PHASES:
 5. IMPLEMENTATION: "Assign Fixer implement security patches, performance improvements, or code fixes"
 6. FINAL REVIEW: "Assign Debugger perform final code review and validation"
 
+${isStarting ? 'STARTING ANALYSIS: Begin with phase 1 - Initial Scan' : 'CONTINUING ANALYSIS: Determine next appropriate action based on current phase and history'}
+
 OUTPUT: Single action command or "Analysis complete."
 Examples:
-- "Assign Debugger scan auth.js for security vulnerabilities"
-- "Assign Optimizer analyze database queries in models/"
+- "Assign Debugger scan project structure and identify critical files"
+- "Assign Debugger scan for security vulnerabilities in auth, input validation, dependencies"
+- "Assign Optimizer analyze performance bottlenecks, database queries, memory usage"
 - "Assign Fixer implement input validation in user.js"
 - "Analysis complete. All phases finished."`;
 
@@ -191,6 +216,7 @@ DECISION MAKING:
 - End analysis when all critical areas are covered
 - When user instructions are provided, prioritize and process them immediately
 - User instructions override default analysis flow when specified
+- ALWAYS provide a specific action command, never just repeat the phases
 
 RESPONSE FORMAT: Single action command or "Analysis complete."`
             },
@@ -199,7 +225,7 @@ RESPONSE FORMAT: Single action command or "Analysis complete."`
               content: fullPrompt
             }
           ],
-          max_tokens: 100, // Increased for more detailed responses
+          max_tokens: 150, // Increased for more detailed responses
           temperature: 0.0, // Ultra-low for precision
           stream: false,
           top_p: 0.1
@@ -223,6 +249,11 @@ RESPONSE FORMAT: Single action command or "Analysis complete."`
           text = 'Analysis step completed.';
         }
 
+        // If the response is just repeating phases, force a specific action
+        if (text.toLowerCase().includes('analysis phases') || text.toLowerCase().includes('phase 1') || text.toLowerCase().includes('phase 2')) {
+          text = isStarting ? 'Assign Debugger scan project structure and identify critical files' : 'Assign Debugger scan for security vulnerabilities in auth, input validation, dependencies';
+        }
+
       this.history.push({ role: 'assistant', content: text });
       this.logToTerminal('AgentSmith', text);
       return text;
@@ -234,6 +265,24 @@ RESPONSE FORMAT: Single action command or "Analysis complete."`
       return "Error state reached. Halting operations.";
     } finally {
       this.setAgentStatus('smith', 'idle');
+    }
+  }
+
+  private determineCurrentPhase(): string {
+    const historyText = this.history.map(h => h.content).join(' ').toLowerCase();
+    
+    if (historyText.includes('security') || historyText.includes('vulnerability')) {
+      return 'SECURITY AUDIT';
+    } else if (historyText.includes('quality') || historyText.includes('complexity')) {
+      return 'CODE QUALITY';
+    } else if (historyText.includes('performance') || historyText.includes('optimize')) {
+      return 'PERFORMANCE';
+    } else if (historyText.includes('implement') || historyText.includes('fix')) {
+      return 'IMPLEMENTATION';
+    } else if (historyText.includes('review') || historyText.includes('final')) {
+      return 'FINAL REVIEW';
+    } else {
+      return 'INITIAL SCAN';
     }
   }
   
@@ -254,13 +303,13 @@ Analysis History: ${analysisHistory}
 
 SPECIFIC INSTRUCTIONS:
 ${agent.role === 'Debugger' ? 
-  'Analyze code for bugs, security vulnerabilities, and quality issues. Report specific file paths, line numbers, and detailed findings. Focus on: SQL injection, XSS, authentication flaws, input validation, code complexity, and maintainability issues.' :
+  'Analyze code for bugs, security vulnerabilities, and quality issues. Report specific file paths, line numbers, and detailed findings. Focus on: SQL injection, XSS, authentication flaws, input validation, code complexity, and maintainability issues. If you cannot access specific files, provide general analysis and recommendations based on common patterns.' :
   agent.role === 'Optimizer' ? 
-  'Analyze performance bottlenecks, memory usage, database queries, and architectural issues. Report specific metrics, optimization opportunities, and refactoring suggestions. Focus on: N+1 queries, memory leaks, inefficient algorithms, and scalability issues.' :
-  'Implement code fixes, security patches, and improvements. Provide specific code changes with explanations. Focus on: input validation, error handling, security hardening, and performance optimizations.'
+  'Analyze performance bottlenecks, memory usage, database queries, and architectural issues. Report specific metrics, optimization opportunities, and refactoring suggestions. Focus on: N+1 queries, memory leaks, inefficient algorithms, and scalability issues. If you cannot access specific files, provide general optimization recommendations based on common patterns.' :
+  'Implement code fixes, security patches, and improvements. Provide specific code changes with explanations. Focus on: input validation, error handling, security hardening, and performance optimizations. If you cannot access specific files, provide general implementation recommendations based on common patterns.'
 }
 
-REPORT FORMAT: Provide specific findings with file paths, line numbers, and actionable recommendations.`;
+REPORT FORMAT: Provide specific findings with file paths, line numbers, and actionable recommendations. If specific files are not accessible, provide general analysis and recommendations based on the task description and common software patterns.`;
 
         const response = await fetch('/api/deepseek/chat/completions', {
             method: 'POST',
@@ -307,7 +356,12 @@ REPORT FORMAT: Provide specific findings with file paths, line numbers, and acti
   }
   
   private async mainLoop() {
-    while (this.isRunning && !this.shouldStop) {
+    let iterationCount = 0;
+    const maxIterations = 20; // Prevent infinite loops
+    
+    while (this.isRunning && !this.shouldStop && iterationCount < maxIterations) {
+      iterationCount++;
+      
       if (this.isPaused) {
         await new Promise(resolve => setTimeout(resolve, 500));
         continue;
@@ -330,23 +384,39 @@ REPORT FORMAT: Provide specific findings with file paths, line numbers, and acti
           this.logToTerminal('AgentSmith', 'All objectives completed. Halting operations.');
           continue;
         }
+        
+        // Add a small delay between iterations to prevent overwhelming the API
+        await new Promise(resolve => setTimeout(resolve, 1000));
 
         let workerId: keyof typeof this.agents | null = null;
         const plan = smithsPlan.toLowerCase();
         
-        // Enhanced worker assignment logic
-        if (plan.includes('assign debugger') || plan.includes('debug') || plan.includes('scan') || plan.includes('find bug') || plan.includes('security') || plan.includes('vulnerability') || plan.includes('quality')) {
+        // Enhanced worker assignment logic with better fallback
+        if (plan.includes('assign debugger') || plan.includes('debug') || plan.includes('scan') || plan.includes('find bug') || plan.includes('security') || plan.includes('vulnerability') || plan.includes('quality') || plan.includes('audit')) {
             workerId = 'b';
-        } else if (plan.includes('assign optimizer') || plan.includes('optimize') || plan.includes('refactor') || plan.includes('improve performance') || plan.includes('performance') || plan.includes('bottleneck')) {
+            this.logToTerminal('AgentSmith', 'Assigning task to Debugger (Agent B)');
+        } else if (plan.includes('assign optimizer') || plan.includes('optimize') || plan.includes('refactor') || plan.includes('improve performance') || plan.includes('performance') || plan.includes('bottleneck') || plan.includes('memory') || plan.includes('database')) {
             workerId = 'c';
-        } else if (plan.includes('assign fixer') || plan.includes('fix') || plan.includes('patch') || plan.includes('implement') || plan.includes('apply') || plan.includes('correct')) {
+            this.logToTerminal('AgentSmith', 'Assigning task to Optimizer (Agent C)');
+        } else if (plan.includes('assign fixer') || plan.includes('fix') || plan.includes('patch') || plan.includes('implement') || plan.includes('apply') || plan.includes('correct') || plan.includes('update')) {
             workerId = 'a';
+            this.logToTerminal('AgentSmith', 'Assigning task to Fixer (Agent A)');
+        } else {
+            // Fallback: if no specific assignment, default to debugger for analysis
+            workerId = 'b';
+            this.logToTerminal('AgentSmith', 'No specific worker assigned, defaulting to Debugger for analysis.');
         }
 
         if (workerId) {
-            const workerResult = await this.delegateToWorker(workerId, smithsPlan);
-            this.currentTask = `Worker ${this.agents[workerId].name} reported: ${workerResult}`;
-            this.history.push({ role: 'user', content: this.currentTask });
+            try {
+                const workerResult = await this.delegateToWorker(workerId, smithsPlan);
+                this.currentTask = `Worker ${this.agents[workerId].name} reported: ${workerResult}`;
+                this.history.push({ role: 'user', content: this.currentTask });
+            } catch (error) {
+                this.logToTerminal('System', `Worker ${this.agents[workerId].name} failed: ${(error as Error).message}`);
+                this.currentTask = `Worker failure, continuing with next task.`;
+                this.history.push({ role: 'user', content: this.currentTask });
+            }
         } else {
             this.currentTask = `AgentSmith status update: ${smithsPlan}`;
             this.history.push({ role: 'user', content: this.currentTask });
@@ -357,6 +427,10 @@ REPORT FORMAT: Provide specific findings with file paths, line numbers, and acti
           this.shouldStop = true;
           this.isRunning = false;
       }
+    }
+    
+    if (iterationCount >= maxIterations) {
+      this.logToTerminal('System', 'Maximum iterations reached. Analysis cycle completed.');
     }
     
     this.logToTerminal('System', this.shouldStop ? 'All operations halted.' : 'Workflow complete.');
@@ -370,6 +444,8 @@ REPORT FORMAT: Provide specific findings with file paths, line numbers, and acti
     this.currentTask = null;
     this.history = [];
     this.instructionHistory = [];
+    this.commandHistory = [];
+    this.currentHistoryIndex = -1;
     this.terminal.innerHTML = '';
     this.instructionHistoryList.innerHTML = '';
     this.tempLocationEl.textContent = 'Waiting for process to start...';
@@ -383,7 +459,6 @@ REPORT FORMAT: Provide specific findings with file paths, line numbers, and acti
     this.stopBtn.disabled = !isStarting;
     this.cancelBtn.disabled = !isStarting;
     this.instructionInput.disabled = !isStarting;
-    this.sendInstructionBtn.disabled = !isStarting;
 
     if (isStarting) {
       this.pauseBtn.textContent = '⏸️ Pause';
@@ -396,6 +471,10 @@ REPORT FORMAT: Provide specific findings with file paths, line numbers, and acti
   private sendInstruction() {
     const instruction = this.instructionInput.value.trim();
     if (!instruction) return;
+
+    // Add to command history
+    this.commandHistory.push(instruction);
+    this.currentHistoryIndex = -1; // Reset to end of history
 
     // Add to instruction history
     const timestamp = new Date().toLocaleTimeString();
@@ -418,17 +497,52 @@ REPORT FORMAT: Provide specific findings with file paths, line numbers, and acti
     }
   }
 
+  private navigateHistory(direction: 'up' | 'down') {
+    if (this.commandHistory.length === 0) return;
+
+    if (direction === 'up') {
+      if (this.currentHistoryIndex === -1) {
+        // First time pressing up, start from the end
+        this.currentHistoryIndex = this.commandHistory.length - 1;
+      } else if (this.currentHistoryIndex > 0) {
+        this.currentHistoryIndex--;
+      }
+    } else if (direction === 'down') {
+      if (this.currentHistoryIndex < this.commandHistory.length - 1) {
+        this.currentHistoryIndex++;
+      } else {
+        // Reached the end, clear the input
+        this.currentHistoryIndex = -1;
+        this.instructionInput.value = '';
+        return;
+      }
+    }
+
+    // Set the input value to the selected command
+    this.instructionInput.value = this.commandHistory[this.currentHistoryIndex];
+    
+    // Select all text for easy editing
+    this.instructionInput.setSelectionRange(0, this.instructionInput.value.length);
+  }
+
   private updateInstructionHistory() {
+    // Clear existing content
     this.instructionHistoryList.innerHTML = '';
+    
+    // Add all messages in chronological order
     this.instructionHistory.forEach(entry => {
-      const entryEl = document.createElement('div');
-      entryEl.className = 'instruction-entry';
-      entryEl.innerHTML = `
-        <div class="timestamp">${entry.timestamp}</div>
-        <div class="content">${entry.content}</div>
+      const messageEl = document.createElement('div');
+      messageEl.className = 'chat-message';
+      messageEl.innerHTML = `
+        <div class="message-header">
+          <span class="message-timestamp">${entry.timestamp}</span>
+        </div>
+        <div class="message-content">${entry.content}</div>
       `;
-      this.instructionHistoryList.appendChild(entryEl);
+      this.instructionHistoryList.appendChild(messageEl);
     });
+    
+    // Scroll to bottom to show latest message
     this.instructionHistoryList.scrollTop = this.instructionHistoryList.scrollHeight;
   }
 
