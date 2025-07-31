@@ -123,8 +123,12 @@ class AgentSmithOpsHub {
           'Accept': 'application/json'
         },
         body: JSON.stringify({
-          model: 'grok',
+          model: 'grok-4-0709',
           messages: [
+            {
+              role: 'system',
+              content: 'You are AgentSmith, an AI orchestrator that coordinates other AI agents for project analysis and optimization.'
+            },
             {
               role: 'user',
               content: fullPrompt
@@ -194,6 +198,10 @@ class AgentSmithOpsHub {
             body: JSON.stringify({
                 model: 'deepseek-coder',
                 messages: [
+                    {
+                        role: 'system',
+                        content: `You are a ${agent.role} agent specialized in code analysis and optimization.`
+                    },
                     {
                         role: 'user',
                         content: workerPrompt
