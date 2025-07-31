@@ -24,6 +24,9 @@ class AgentSmithOpsHub {
   private cancelBtn: HTMLButtonElement;
   private projectSourceInput: HTMLInputElement;
   private tempLocationEl: HTMLElement;
+  private instructionInput: HTMLTextAreaElement;
+  private sendInstructionBtn: HTMLButtonElement;
+  private instructionHistoryList: HTMLElement;
 
   // State
   private agents: Record<string, Agent>;
@@ -32,6 +35,7 @@ class AgentSmithOpsHub {
   private shouldStop = false;
   private currentTask: string | null = null;
   private history: { role: string; content: string }[] = [];
+  private instructionHistory: { timestamp: string; content: string }[] = [];
 
   constructor() {
     // API keys are handled server-side via proxy
@@ -45,6 +49,9 @@ class AgentSmithOpsHub {
     this.cancelBtn = document.getElementById('cancel-btn') as HTMLButtonElement;
     this.projectSourceInput = document.getElementById('project-source') as HTMLInputElement;
     this.tempLocationEl = document.getElementById('temp-location')!;
+    this.instructionInput = document.getElementById('instruction-input') as HTMLTextAreaElement;
+    this.sendInstructionBtn = document.getElementById('send-instruction-btn') as HTMLButtonElement;
+    this.instructionHistoryList = document.getElementById('instruction-history-list')!;
 
     this.agents = {
       smith: this.createAgent('agent-smith', '🧠 AgentSmith', 'Director'),
@@ -75,6 +82,15 @@ class AgentSmithOpsHub {
     this.pauseBtn.addEventListener('click', () => this.togglePause());
     this.stopBtn.addEventListener('click', () => this.stopGracefully());
     this.cancelBtn.addEventListener('click', () => this.cancelImmediately());
+    this.sendInstructionBtn.addEventListener('click', () => this.sendInstruction());
+    
+    // Enable instruction input on Enter key
+    this.instructionInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && e.ctrlKey) {
+        e.preventDefault();
+        this.sendInstruction();
+      }
+    });
   }
 
   private setAgentStatus(agentId: keyof typeof this.agents, status: AgentStatus) {
@@ -113,7 +129,34 @@ class AgentSmithOpsHub {
     this.logToTerminal('AgentSmith', 'Planning next action...');
     
     try {
-      const fullPrompt = `AgentSmith: Orchestrate project analysis. History: ${this.history.map(h => `${h.role}: ${h.content}`).join(' | ')}. Current: ${prompt}. Output: Single action command or "Analysis complete." Examples: "Assign Debugger scan auth.js" or "Optimizer found N+1 query. Assign Fixer."`;
+      const fullPrompt = `AgentSmith: You are an intelligent project orchestrator. Analyze the current state and determine the next action.
+
+PROJECT CONTEXT:
+- Project: ${this.projectSourceInput.value || 'the specified project'}
+- Temp Location: ${this.tempLocationEl.textContent}
+- Analysis History: ${this.history.map(h => `${h.role}: ${h.content}`).join(' | ')}
+
+CURRENT TASK: ${prompt}
+
+AVAILABLE WORKERS:
+- Agent A (Fixer): Code fixes, implementations, security patches
+- Agent B (Debugger): Bug detection, vulnerability scanning, code quality issues
+- Agent C (Optimizer): Performance optimization, refactoring, architectural improvements
+
+ANALYSIS PHASES:
+1. INITIAL SCAN: "Assign Debugger scan project structure and identify critical files"
+2. SECURITY AUDIT: "Assign Debugger scan for security vulnerabilities in auth, input validation, dependencies"
+3. CODE QUALITY: "Assign Debugger analyze code quality, complexity, and maintainability"
+4. PERFORMANCE: "Assign Optimizer analyze performance bottlenecks, database queries, memory usage"
+5. IMPLEMENTATION: "Assign Fixer implement security patches, performance improvements, or code fixes"
+6. FINAL REVIEW: "Assign Debugger perform final code review and validation"
+
+OUTPUT: Single action command or "Analysis complete."
+Examples:
+- "Assign Debugger scan auth.js for security vulnerabilities"
+- "Assign Optimizer analyze database queries in models/"
+- "Assign Fixer implement input validation in user.js"
+- "Analysis complete. All phases finished."`;
 
       const response = await fetch('/api/xai/v1/chat/completions', {
         method: 'POST',
@@ -125,17 +168,41 @@ class AgentSmithOpsHub {
           messages: [
             {
               role: 'system',
-              content: 'You are AgentSmith, an AI orchestrator that coordinates other AI agents for project analysis and optimization.'
+              content: `You are AgentSmith, an intelligent AI orchestrator for software project analysis and optimization. You coordinate three specialized agents:
+
+AGENT ROLES:
+- Agent A (Fixer): Implements code fixes, security patches, and improvements
+- Agent B (Debugger): Detects bugs, security vulnerabilities, and code quality issues  
+- Agent C (Optimizer): Optimizes performance, refactors code, and improves architecture
+
+ANALYSIS STRATEGY:
+1. Start with broad project scanning to understand structure
+2. Focus on security vulnerabilities (auth, input validation, dependencies)
+3. Analyze code quality and maintainability
+4. Identify performance bottlenecks and optimization opportunities
+5. Implement fixes and improvements
+6. Validate all changes
+
+DECISION MAKING:
+- Use specific file paths when possible (e.g., "scan auth.js", "analyze models/user.js")
+- Prioritize security issues over performance
+- Consider project context and previous findings
+- Provide clear, actionable instructions to workers
+- End analysis when all critical areas are covered
+- When user instructions are provided, prioritize and process them immediately
+- User instructions override default analysis flow when specified
+
+RESPONSE FORMAT: Single action command or "Analysis complete."`
             },
             {
               role: 'user',
               content: fullPrompt
             }
           ],
-          max_tokens: 50, // Ultra-low for speed
+          max_tokens: 100, // Increased for more detailed responses
           temperature: 0.0, // Ultra-low for precision
-          stream: false, // No streaming for instant response
-          top_p: 0.1 // Minimal randomness for speed
+          stream: false,
+          top_p: 0.1
         })
       });
 
@@ -176,7 +243,24 @@ class AgentSmithOpsHub {
     this.logToTerminal(agent.name, `Acknowledged. Executing: "${task.substring(0, 70)}..."`);
 
     try {
-        const workerPrompt = `${agent.role} agent: Task "${task}". Report: ${agent.role === 'Debugger' ? 'Code issue with file/line' : agent.role === 'Optimizer' ? 'Performance bottleneck with metrics' : 'Code fix with technical details'}. Example: "Found null pointer in auth.js:42."`;
+        const projectContext = `Project: ${this.projectSourceInput.value || 'the specified project'}`;
+        const analysisHistory = this.history.map(h => `${h.role}: ${h.content}`).join(' | ');
+        
+        const workerPrompt = `${agent.role} Agent Task: "${task}"
+
+PROJECT CONTEXT:
+${projectContext}
+Analysis History: ${analysisHistory}
+
+SPECIFIC INSTRUCTIONS:
+${agent.role === 'Debugger' ? 
+  'Analyze code for bugs, security vulnerabilities, and quality issues. Report specific file paths, line numbers, and detailed findings. Focus on: SQL injection, XSS, authentication flaws, input validation, code complexity, and maintainability issues.' :
+  agent.role === 'Optimizer' ? 
+  'Analyze performance bottlenecks, memory usage, database queries, and architectural issues. Report specific metrics, optimization opportunities, and refactoring suggestions. Focus on: N+1 queries, memory leaks, inefficient algorithms, and scalability issues.' :
+  'Implement code fixes, security patches, and improvements. Provide specific code changes with explanations. Focus on: input validation, error handling, security hardening, and performance optimizations.'
+}
+
+REPORT FORMAT: Provide specific findings with file paths, line numbers, and actionable recommendations.`;
 
         const response = await fetch('/api/deepseek/chat/completions', {
             method: 'POST',
@@ -189,17 +273,17 @@ class AgentSmithOpsHub {
                 messages: [
                     {
                         role: 'system',
-                        content: `You are a ${agent.role} agent specialized in code analysis and optimization.`
+                        content: `You are a ${agent.role} agent specialized in code analysis and optimization. You have access to the project source code and should provide detailed, actionable analysis.`
                     },
                     {
                         role: 'user',
                         content: workerPrompt
                     }
                 ],
-                max_tokens: 100, // Reduced for speed
+                max_tokens: 200, // Increased for detailed analysis
                 temperature: 0.0, // Ultra-low for precision
-                stream: false, // No streaming for instant response
-                top_p: 0.1 // Minimal randomness for speed
+                stream: false,
+                top_p: 0.1
             })
         });
 
@@ -230,7 +314,15 @@ class AgentSmithOpsHub {
       }
       
       try {
-        const smithsPlan = await this.getSmithsNextMove(this.currentTask || 'Start the analysis.');
+        // Check if there's a user instruction that needs priority
+        const userInstruction = this.instructionHistory.length > 0 ? 
+          this.instructionHistory[this.instructionHistory.length - 1].content : null;
+        
+        const taskPrompt = userInstruction ? 
+          `User instruction: ${userInstruction}. Process this instruction and continue with analysis.` :
+          this.currentTask || 'Start the analysis.';
+        
+        const smithsPlan = await this.getSmithsNextMove(taskPrompt);
         this.currentTask = smithsPlan;
 
         if (smithsPlan.toLowerCase().includes('complete') || smithsPlan.toLowerCase().includes('finished')) {
@@ -241,12 +333,14 @@ class AgentSmithOpsHub {
 
         let workerId: keyof typeof this.agents | null = null;
         const plan = smithsPlan.toLowerCase();
-        if (plan.includes('fix') || plan.includes('patch') || plan.includes('implement')) {
-            workerId = 'a';
-        } else if (plan.includes('debug') || plan.includes('scan') || plan.includes('find bug')) {
+        
+        // Enhanced worker assignment logic
+        if (plan.includes('assign debugger') || plan.includes('debug') || plan.includes('scan') || plan.includes('find bug') || plan.includes('security') || plan.includes('vulnerability') || plan.includes('quality')) {
             workerId = 'b';
-        } else if (plan.includes('optimize') || plan.includes('refactor') || plan.includes('improve performance')) {
+        } else if (plan.includes('assign optimizer') || plan.includes('optimize') || plan.includes('refactor') || plan.includes('improve performance') || plan.includes('performance') || plan.includes('bottleneck')) {
             workerId = 'c';
+        } else if (plan.includes('assign fixer') || plan.includes('fix') || plan.includes('patch') || plan.includes('implement') || plan.includes('apply') || plan.includes('correct')) {
+            workerId = 'a';
         }
 
         if (workerId) {
@@ -275,7 +369,9 @@ class AgentSmithOpsHub {
     this.shouldStop = false;
     this.currentTask = null;
     this.history = [];
+    this.instructionHistory = [];
     this.terminal.innerHTML = '';
+    this.instructionHistoryList.innerHTML = '';
     this.tempLocationEl.textContent = 'Waiting for process to start...';
     Object.keys(this.agents).forEach(id => this.setAgentStatus(id as keyof typeof this.agents, 'idle'));
   }
@@ -286,6 +382,8 @@ class AgentSmithOpsHub {
     this.pauseBtn.disabled = !isStarting;
     this.stopBtn.disabled = !isStarting;
     this.cancelBtn.disabled = !isStarting;
+    this.instructionInput.disabled = !isStarting;
+    this.sendInstructionBtn.disabled = !isStarting;
 
     if (isStarting) {
       this.pauseBtn.textContent = '⏸️ Pause';
@@ -293,6 +391,45 @@ class AgentSmithOpsHub {
       this.startBtn.disabled = false;
       this.projectSourceInput.disabled = false;
     }
+  }
+
+  private sendInstruction() {
+    const instruction = this.instructionInput.value.trim();
+    if (!instruction) return;
+
+    // Add to instruction history
+    const timestamp = new Date().toLocaleTimeString();
+    this.instructionHistory.push({ timestamp, content: instruction });
+    this.updateInstructionHistory();
+
+    // Log the instruction
+    this.logToTerminal('User', `Instruction sent: ${instruction}`);
+
+    // Clear input
+    this.instructionInput.value = '';
+
+    // Update current task with the instruction
+    this.currentTask = `User instruction: ${instruction}`;
+    this.history.push({ role: 'user', content: this.currentTask });
+
+    // If analysis is running, this will be picked up in the next mainLoop iteration
+    if (!this.isRunning) {
+      this.logToTerminal('System', 'Analysis not running. Start analysis to process instruction.');
+    }
+  }
+
+  private updateInstructionHistory() {
+    this.instructionHistoryList.innerHTML = '';
+    this.instructionHistory.forEach(entry => {
+      const entryEl = document.createElement('div');
+      entryEl.className = 'instruction-entry';
+      entryEl.innerHTML = `
+        <div class="timestamp">${entry.timestamp}</div>
+        <div class="content">${entry.content}</div>
+      `;
+      this.instructionHistoryList.appendChild(entryEl);
+    });
+    this.instructionHistoryList.scrollTop = this.instructionHistoryList.scrollHeight;
   }
 
   public async startOrchestration() {

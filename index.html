@@ -28,6 +28,24 @@
           <label>📁 Temp Copy Location</label>
           <span id="temp-location">Waiting for process to start...</span>
         </div>
+        <div class="panel communication-panel">
+          <div class="communication-header">
+            <h3>💬 Direct AgentSmith Communication</h3>
+            <button id="send-instruction-btn" type="button" disabled>📤 Send Instruction</button>
+          </div>
+          <div class="instruction-input-group">
+            <textarea
+              id="instruction-input"
+              placeholder="Enter your specific instructions for AgentSmith...&#10;&#10;Examples:&#10;- Focus on security vulnerabilities in auth.js&#10;- Analyze performance bottlenecks in database queries&#10;- Implement input validation for user forms&#10;- Scan for SQL injection vulnerabilities&#10;- Optimize memory usage in image processing"
+              rows="6"
+              disabled
+            ></textarea>
+          </div>
+          <div class="instruction-history">
+            <h4>📝 Instruction History</h4>
+            <div id="instruction-history-list"></div>
+          </div>
+        </div>
         <div class="panel terminal-panel">
           <div class="terminal-header">
             <h3>🧠 AgentSmith Terminal</h3>
