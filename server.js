@@ -32,8 +32,8 @@ if (process.env.NODE_ENV === 'production') {
 app.use('/api/xai', createProxyMiddleware({
   target: 'https://api.x.ai',
   changeOrigin: true,
-  pathRewrite: {
-    '^/api/xai': ''
+  pathRewrite: (path) => {
+    return path.replace('/api/xai', '');
   },
   onProxyReq: (proxyReq, req, res) => {
     // Forward the Authorization header
@@ -47,8 +47,8 @@ app.use('/api/xai', createProxyMiddleware({
 app.use('/api/deepseek', createProxyMiddleware({
   target: 'https://api.deepseek.com',
   changeOrigin: true,
-  pathRewrite: {
-    '^/api/deepseek': '/v1'
+  pathRewrite: (path) => {
+    return path.replace('/api/deepseek', '/v1');
   },
   onProxyReq: (proxyReq, req, res) => {
     // Forward the Authorization header

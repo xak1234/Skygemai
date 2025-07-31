@@ -38,7 +38,7 @@ async function testAPIs() {
           'Accept': 'application/json'
         },
         body: JSON.stringify({
-          model: 'grok-beta',
+          model: 'grok',
           messages: [{ role: 'user', content: 'Hello, AgentSmith test' }],
           max_tokens: 30, // Ultra-low for speed
           temperature: 0.0, // Ultra-low for precision
