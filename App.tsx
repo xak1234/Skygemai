@@ -60,6 +60,7 @@ const App: React.FC = () => {
     };
 
     const stopMission = () => {
+        console.log('Stopping mission...');
         setIsRunning(false);
         setIsPaused(false);
         setIsWaitingForInput(false);
@@ -101,21 +102,30 @@ const App: React.FC = () => {
 
         let loopCount = 0;
         const maxLoops = 20; // Increased loop limit for more complex tasks
+        let localIsRunning = true; // Local variable to track running state
 
         try {
-            while (loopCount < maxLoops) {
+            while (loopCount < maxLoops && localIsRunning) {
                 loopCount++;
 
                 // Check if mission was stopped
                 if (!isRunning) {
+                    console.log('Mission stopped - isRunning is false');
+                    localIsRunning = false;
                     addMessage('master', 'AgentSmith', 'info', 'Mission execution stopped.');
                     break;
                 }
+
+                // Debug: Log the current state
+                console.log('Mission state:', { isRunning, loopCount, activeAgentId });
 
                 setActiveAgentId('master');
                 addMessage('master', 'AgentSmith', 'info', 'Thinking...');
 
                 const agentSmithDecision: AgentSmithDecision = await getAgentSmithDecision(agentSmithPrompt, agents, objective, getHistoryAsString());
+
+                // Debug logging
+                console.log('AgentSmith Decision:', JSON.stringify(agentSmithDecision, null, 2));
 
                 if (agentSmithDecision.thought) {
                     addMessage('master', 'AgentSmith', 'thought', agentSmithDecision.thought);
@@ -127,13 +137,27 @@ const App: React.FC = () => {
                     addMessage('master', 'AgentSmith', 'recommendation', agentSmithDecision.recommendation);
                 }
 
-                if (agentSmithDecision.status === 'complete' || !agentSmithDecision.suggestedAgentIds || !agentSmithDecision.currentGoal) {
+                if (agentSmithDecision.status === 'complete' || !agentSmithDecision.currentGoal) {
                     setWorkspaceContent(agentSmithDecision.finalOutput || 'Process complete. No final output provided.');
                     addMessage('master', 'AgentSmith', 'result', 'Mission accomplished.');
                     if (useFirebase && firebaseService.isConfigured() && currentMissionId) {
                         await firebaseService.updateMissionStatus(currentMissionId, 'completed', agentSmithDecision.finalOutput);
                     }
                     break;
+                }
+
+                // Handle case where no agents are suggested (fallback to single agent)
+                if (!agentSmithDecision.suggestedAgentIds || agentSmithDecision.suggestedAgentIds.length === 0) {
+                    // Check if we have the old format (suggestedAgentId)
+                    if (agentSmithDecision.suggestedAgentId) {
+                        agentSmithDecision.suggestedAgentIds = [agentSmithDecision.suggestedAgentId];
+                        agentSmithDecision.suggestedModels = [agentSmithDecision.suggestedModel || 'deepseek-coder-33b-instruct'];
+                        addMessage('master', 'AgentSmith', 'info', 'Converted old format to new format.');
+                    } else {
+                        addMessage('master', 'AgentSmith', 'info', 'No agents suggested, using first available agent as fallback.');
+                        agentSmithDecision.suggestedAgentIds = [agents[0]?.id].filter(Boolean);
+                        agentSmithDecision.suggestedModels = ['deepseek-coder-33b-instruct'];
+                    }
                 }
 
                 const { suggestedAgentIds, suggestedModels, currentGoal } = agentSmithDecision;

@@ -19,6 +19,8 @@ export interface AgentSmithDecision {
   currentGoal?: string;
   suggestedAgentIds?: string[]; // Updated to support multiple agents
   suggestedModels?: string[]; // Updated to support multiple models
+  suggestedAgentId?: string; // Backward compatibility
+  suggestedModel?: string; // Backward compatibility
   status: 'running' | 'complete';
   finalOutput?: string;
   recommendation?: string;

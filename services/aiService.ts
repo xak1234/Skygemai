@@ -179,8 +179,13 @@ export const getAgentSmithDecision = async (
     const response = await generateAgentSmithDecisionWithRetry(prompt);
     const jsonText = sanitizeJson(response);
     
+    console.log("Raw AI response:", response);
+    console.log("Sanitized JSON:", jsonText);
+    
     try {
-        return JSON.parse(jsonText) as AgentSmithDecision;
+        const parsed = JSON.parse(jsonText) as AgentSmithDecision;
+        console.log("Parsed AgentSmith decision:", parsed);
+        return parsed;
     } catch (e) {
         console.error("Failed to parse AgentSmith decision JSON:", e);
         console.error("Raw text from AI:", jsonText);
