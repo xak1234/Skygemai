@@ -1,18 +1,36 @@
 import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
 import { Agent, AgentSmithDecision } from '../types';
 
-// Check for required API keys
-if (!process.env.GROK_API_KEY) {
-    throw new Error("GROK_API_KEY environment variable not set.");
-}
-
-if (!process.env.DEEPSEEK_API_KEY) {
-    throw new Error("DEEPSEEK_API_KEY environment variable not set.");
-}
+// Get API keys from environment (will be injected by Vite)
+const getApiKeys = () => {
+    const grokApiKey = process.env.GROK_API_KEY;
+    const deepSeekApiKey = process.env.DEEPSEEK_API_KEY;
+    
+    if (!grokApiKey) {
+        console.error("GROK_API_KEY environment variable not set.");
+        throw new Error("GROK_API_KEY environment variable not set.");
+    }
+    
+    if (!deepSeekApiKey) {
+        console.error("DEEPSEEK_API_KEY environment variable not set.");
+        throw new Error("DEEPSEEK_API_KEY environment variable not set.");
+    }
+    
+    return { grokApiKey, deepSeekApiKey };
+};
 
 // Initialize AI providers
-const grokAI = new GoogleGenAI({ apiKey: process.env.GROK_API_KEY });
-const deepSeekAI = new GoogleGenAI({ apiKey: process.env.DEEPSEEK_API_KEY });
+let grokAI: GoogleGenAI | null = null;
+let deepSeekAI: GoogleGenAI | null = null;
+
+const initializeAIProviders = () => {
+    if (!grokAI || !deepSeekAI) {
+        const { grokApiKey, deepSeekApiKey } = getApiKeys();
+        grokAI = new GoogleGenAI({ apiKey: grokApiKey });
+        deepSeekAI = new GoogleGenAI({ apiKey: deepSeekApiKey });
+    }
+    return { grokAI, deepSeekAI };
+};
 
 const agentSmithResponseSchema = {
     type: Type.OBJECT,
@@ -45,6 +63,7 @@ const generateAgentSmithDecisionWithRetry = async (
     prompt: string,
     maxRetries: number = 3
 ): Promise<GenerateContentResponse> => {
+    const { grokAI } = initializeAIProviders();
     let lastError: any = null;
     for (let i = 0; i < maxRetries; i++) {
         try {
@@ -74,6 +93,7 @@ const generateWorkerResponseWithRetry = async (
     prompt: string,
     maxRetries: number = 3
 ): Promise<GenerateContentResponse> => {
+    const { deepSeekAI } = initializeAIProviders();
     let lastError: any = null;
     for (let i = 0; i < maxRetries; i++) {
         try {
