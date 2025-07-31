@@ -1,7 +1,7 @@
 import './index.css';
 
 type AgentStatus = 'idle' | 'working' | 'error';
-type AgentRole = 'Fixer' | 'Debugger' | 'Optimizer' | 'Director';
+type AgentRole = 'Fixer' | 'Debugger' | 'Optimizer' | 'CodeManiac' | 'Director';
 
 interface Agent {
   id: string;
@@ -15,19 +15,15 @@ interface Agent {
 class AgentSmithOpsHub {
   private xaiApiKey: string;
   private deepseekApiKey: string;
-  
-  // DOM Elements
+  private tempLocationEl: HTMLElement;
   private terminal: HTMLElement;
   private startBtn: HTMLButtonElement;
   private pauseBtn: HTMLButtonElement;
   private stopBtn: HTMLButtonElement;
   private cancelBtn: HTMLButtonElement;
   private projectSourceInput: HTMLInputElement;
-  private tempLocationEl: HTMLElement;
   private instructionInput: HTMLTextAreaElement;
   private instructionHistoryList: HTMLElement;
-
-  // State
   private agents: Record<string, Agent>;
   private isRunning = false;
   private isPaused = false;
@@ -37,6 +33,8 @@ class AgentSmithOpsHub {
   private instructionHistory: { timestamp: string; content: string }[] = [];
   private commandHistory: string[] = [];
   private currentHistoryIndex: number = -1;
+  private projectFiles: Map<string, string> = new Map(); // Store project files
+  private projectStructure: string[] = []; // Store file paths
 
   constructor() {
     // API keys are handled server-side via proxy
@@ -58,6 +56,7 @@ class AgentSmithOpsHub {
       a: this.createAgent('agent-a', '🛠️ Agent A (Fixer)', 'Fixer'),
       b: this.createAgent('agent-b', '🕵️ Agent B (Debugger)', 'Debugger'),
       c: this.createAgent('agent-c', '🚀 Agent C (Optimizer)', 'Optimizer'),
+      d: this.createAgent('agent-d', '🤖 Agent D (CodeManiac)', 'CodeManiac'),
     };
     
     this.bindEvents();
@@ -143,14 +142,22 @@ class AgentSmithOpsHub {
     this.setAgentStatus('smith', 'working');
     this.logToTerminal('AgentSmith', 'Planning next action...');
     
-          try {
-        // Check if we're starting fresh or continuing
-        const isStarting = this.history.length === 0;
-        const currentPhase = this.determineCurrentPhase();
-        
-        this.logToTerminal('AgentSmith', `Starting iteration ${this.history.length + 1}, Phase: ${currentPhase}`);
-        
-        const fullPrompt = `AgentSmith: You are an intelligent project orchestrator. Analyze the current state and determine the next action.
+    try {
+      // Check if we're starting fresh or continuing
+      const isStarting = this.history.length === 0;
+      const currentPhase = this.determineCurrentPhase();
+      
+      // Analyze recent activity to prevent repetition
+      const recentActions = this.history.slice(-5).map(h => h.role);
+      const debuggerCount = recentActions.filter(role => role.includes('Debugger')).length;
+      const optimizerCount = recentActions.filter(role => role.includes('Optimizer')).length;
+      const fixerCount = recentActions.filter(role => role.includes('Fixer')).length;
+      const codeManiacCount = recentActions.filter(role => role.includes('CodeManiac')).length;
+      
+      this.logToTerminal('AgentSmith', `Starting iteration ${this.history.length + 1}, Phase: ${currentPhase}`);
+      this.logToTerminal('AgentSmith', `Recent activity - Debugger: ${debuggerCount}, Optimizer: ${optimizerCount}, Fixer: ${fixerCount}, CodeManiac: ${codeManiacCount}`);
+      
+      const fullPrompt = `AgentSmith: You are an intelligent project orchestrator. Analyze the current state and determine the next action.
 
 PROJECT CONTEXT:
 - Project: ${this.projectSourceInput.value || 'the specified project'}
@@ -158,29 +165,47 @@ PROJECT CONTEXT:
 - Analysis History: ${this.history.map(h => `${h.role}: ${h.content}`).join(' | ')}
 - Current Phase: ${currentPhase}
 
+RECENT ACTIVITY ANALYSIS:
+- Recent Debugger calls: ${debuggerCount}
+- Recent Optimizer calls: ${optimizerCount}
+- Recent Fixer calls: ${fixerCount}
+- Recent CodeManiac calls: ${codeManiacCount}
+- Total iterations: ${this.history.length}
+
 CURRENT TASK: ${prompt}
 
 AVAILABLE WORKERS:
 - Agent A (Fixer): Code fixes, implementations, security patches
 - Agent B (Debugger): Bug detection, vulnerability scanning, code quality issues
 - Agent C (Optimizer): Performance optimization, refactoring, architectural improvements
+- Agent D (CodeManiac): Creative solutions, novel approaches, innovative patterns
 
-ANALYSIS PHASES:
+ANALYSIS STRATEGY:
 1. INITIAL SCAN: "Assign Debugger scan project structure and identify critical files"
 2. SECURITY AUDIT: "Assign Debugger scan for security vulnerabilities in auth, input validation, dependencies"
 3. CODE QUALITY: "Assign Debugger analyze code quality, complexity, and maintainability"
 4. PERFORMANCE: "Assign Optimizer analyze performance bottlenecks, database queries, memory usage"
 5. IMPLEMENTATION: "Assign Fixer implement security patches, performance improvements, or code fixes"
-6. FINAL REVIEW: "Assign Debugger perform final code review and validation"
+6. CREATIVE SOLUTIONS: "Assign CodeManiac provide innovative approaches and novel patterns"
+7. FINAL REVIEW: "Assign Debugger perform final code review and validation"
 
-${isStarting ? 'STARTING ANALYSIS: Begin with phase 1 - Initial Scan' : 'CONTINUING ANALYSIS: Determine next appropriate action based on current phase and history'}
+DECISION RULES:
+- If Debugger has been called ${debuggerCount} times recently, prioritize Optimizer or Fixer
+- If Optimizer hasn't been called, assign it for performance analysis
+- If Fixer hasn't been called, assign it for implementation
+- If CodeManiac hasn't been called, assign it for creative solutions
+- If all agents have been used, move to next phase or conclude
+- If in FORCE_PROGRESSION phase, skip Debugger and assign Optimizer, Fixer, or CodeManiac
+- Maximum iterations: 20 (currently at ${this.history.length})
+
+${isStarting ? 'STARTING ANALYSIS: Begin with phase 1 - Initial Scan' : 'CONTINUING ANALYSIS: Determine next appropriate action based on current phase and recent activity'}
 
 OUTPUT: Single action command or "Analysis complete."
 Examples:
 - "Assign Debugger scan project structure and identify critical files"
-- "Assign Debugger scan for security vulnerabilities in auth, input validation, dependencies"
 - "Assign Optimizer analyze performance bottlenecks, database queries, memory usage"
 - "Assign Fixer implement input validation in user.js"
+- "Assign CodeManiac provide innovative authentication patterns"
 - "Analysis complete. All phases finished."`;
 
       const response = await fetch('/api/xai/v1/chat/completions', {
@@ -193,12 +218,13 @@ Examples:
           messages: [
             {
               role: 'system',
-              content: `You are AgentSmith, an intelligent AI orchestrator for software project analysis and optimization. You coordinate three specialized agents:
+              content: `You are AgentSmith, an intelligent AI orchestrator for software project analysis and optimization. You coordinate four specialized agents:
 
 AGENT ROLES:
 - Agent A (Fixer): Implements code fixes, security patches, and improvements
 - Agent B (Debugger): Detects bugs, security vulnerabilities, and code quality issues  
 - Agent C (Optimizer): Optimizes performance, refactors code, and improves architecture
+- Agent D (CodeManiac): Provides creative, innovative, and novel solutions with unconventional approaches
 
 ANALYSIS STRATEGY:
 1. Start with broad project scanning to understand structure
@@ -206,7 +232,8 @@ ANALYSIS STRATEGY:
 3. Analyze code quality and maintainability
 4. Identify performance bottlenecks and optimization opportunities
 5. Implement fixes and improvements
-6. Validate all changes
+6. Explore creative and innovative solutions
+7. Validate all changes
 
 DECISION MAKING:
 - Use specific file paths when possible (e.g., "scan auth.js", "analyze models/user.js")
@@ -217,6 +244,9 @@ DECISION MAKING:
 - When user instructions are provided, prioritize and process them immediately
 - User instructions override default analysis flow when specified
 - ALWAYS provide a specific action command, never just repeat the phases
+- AVOID REPETITIVE PATTERNS: If Debugger has been called multiple times recently, assign Optimizer or Fixer instead
+- FORCE PROGRESSION: When stuck in debugger loops, force assignment to other agents
+- CREATIVE SOLUTIONS: Use CodeManiac for innovative approaches and novel patterns
 
 RESPONSE FORMAT: Single action command or "Analysis complete."`
             },
@@ -270,6 +300,18 @@ RESPONSE FORMAT: Single action command or "Analysis complete."`
 
   private determineCurrentPhase(): string {
     const historyText = this.history.map(h => h.content).join(' ').toLowerCase();
+    const recentHistory = this.history.slice(-3).map(h => h.role).join(' ').toLowerCase();
+    
+    // Check for specific patterns in recent history to avoid getting stuck
+    const hasRecentDebugger = recentHistory.includes('debugger');
+    const hasRecentOptimizer = recentHistory.includes('optimizer');
+    const hasRecentFixer = recentHistory.includes('fixer');
+    const hasRecentCodeManiac = recentHistory.includes('codemaniac');
+    
+    // If we've had multiple recent debugger calls, force progression
+    if (hasRecentDebugger && !hasRecentOptimizer && !hasRecentFixer && !hasRecentCodeManiac) {
+      return 'FORCE_PROGRESSION';
+    }
     
     if (historyText.includes('security') || historyText.includes('vulnerability')) {
       return 'SECURITY AUDIT';
@@ -279,6 +321,8 @@ RESPONSE FORMAT: Single action command or "Analysis complete."`
       return 'PERFORMANCE';
     } else if (historyText.includes('implement') || historyText.includes('fix')) {
       return 'IMPLEMENTATION';
+    } else if (historyText.includes('creative') || historyText.includes('novel') || historyText.includes('innovative')) {
+      return 'CREATIVE SOLUTIONS';
     } else if (historyText.includes('review') || historyText.includes('final')) {
       return 'FINAL REVIEW';
     } else {
@@ -295,21 +339,30 @@ RESPONSE FORMAT: Single action command or "Analysis complete."`
         const projectContext = `Project: ${this.projectSourceInput.value || 'the specified project'}`;
         const analysisHistory = this.history.map(h => `${h.role}: ${h.content}`).join(' | ');
         
+        // Get relevant files for analysis
+        const relevantFiles = this.getRelevantFiles(task);
+        const fileContent = this.formatFileContent(relevantFiles);
+        
         const workerPrompt = `${agent.role} Agent Task: "${task}"
 
 PROJECT CONTEXT:
 ${projectContext}
 Analysis History: ${analysisHistory}
 
+PROJECT FILES AVAILABLE:
+${fileContent}
+
 SPECIFIC INSTRUCTIONS:
 ${agent.role === 'Debugger' ? 
-  'Analyze code for bugs, security vulnerabilities, and quality issues. Report specific file paths, line numbers, and detailed findings. Focus on: SQL injection, XSS, authentication flaws, input validation, code complexity, and maintainability issues. If you cannot access specific files, provide general analysis and recommendations based on common patterns.' :
+  'Analyze the provided code files for bugs, security vulnerabilities, and code quality issues. Report specific file paths, line numbers, and detailed findings. Focus on: SQL injection, XSS, authentication flaws, input validation, code complexity, and maintainability issues. Use the actual file content provided above for your analysis.' :
   agent.role === 'Optimizer' ? 
-  'Analyze performance bottlenecks, memory usage, database queries, and architectural issues. Report specific metrics, optimization opportunities, and refactoring suggestions. Focus on: N+1 queries, memory leaks, inefficient algorithms, and scalability issues. If you cannot access specific files, provide general optimization recommendations based on common patterns.' :
-  'Implement code fixes, security patches, and improvements. Provide specific code changes with explanations. Focus on: input validation, error handling, security hardening, and performance optimizations. If you cannot access specific files, provide general implementation recommendations based on common patterns.'
+  'Analyze the provided code files for performance bottlenecks, memory usage, database queries, and architectural issues. Report specific metrics, optimization opportunities, and refactoring suggestions. Focus on: N+1 queries, memory leaks, inefficient algorithms, and scalability issues. Use the actual file content provided above for your analysis.' :
+  agent.role === 'Fixer' ? 
+  'Implement code fixes, security patches, and improvements based on the provided code files. Provide specific code changes with explanations. Focus on: input validation, error handling, security hardening, and performance optimizations. Use the actual file content provided above for your implementation.' :
+  'Provide creative, innovative, and novel solutions to the identified problems. Think outside the box and suggest unconventional approaches, modern patterns, and cutting-edge techniques. Focus on: creative refactoring, innovative architectures, novel security approaches, and experimental optimizations. Be bold and imaginative while maintaining code quality and security. Use the actual file content provided above for your creative analysis.'
 }
 
-REPORT FORMAT: Provide specific findings with file paths, line numbers, and actionable recommendations. If specific files are not accessible, provide general analysis and recommendations based on the task description and common software patterns.`;
+REPORT FORMAT: Provide specific findings with file paths, line numbers, and actionable recommendations based on the actual code files provided.`;
 
         const response = await fetch('/api/deepseek/chat/completions', {
             method: 'POST',
@@ -322,17 +375,17 @@ REPORT FORMAT: Provide specific findings with file paths, line numbers, and acti
                 messages: [
                     {
                         role: 'system',
-                        content: `You are a ${agent.role} agent specialized in code analysis and optimization. You have access to the project source code and should provide detailed, actionable analysis.`
+                        content: `You are a ${agent.role} agent specialized in code analysis and optimization. You have access to the project source code files and should provide detailed, actionable analysis based on the actual code content provided.`
                     },
                     {
                         role: 'user',
                         content: workerPrompt
                     }
                 ],
-                max_tokens: 200, // Increased for detailed analysis
-                temperature: 0.0, // Ultra-low for precision
+                max_tokens: 300, // Increased for detailed analysis with file content
+                temperature: agent.role === 'CodeManiac' ? 0.7 : 0.0, // Higher temperature for creative solutions
                 stream: false,
-                top_p: 0.1
+                top_p: agent.role === 'CodeManiac' ? 0.9 : 0.1 // Higher top_p for creativity
             })
         });
 
@@ -353,6 +406,66 @@ REPORT FORMAT: Provide specific findings with file paths, line numbers, and acti
         this.setAgentStatus(agentId, 'error');
         throw new Error(errorMessage);
     }
+  }
+
+  private getRelevantFiles(task: string): string[] {
+    // Determine which files are relevant based on the task
+    const taskLower = task.toLowerCase();
+    const relevantFiles: string[] = [];
+    
+    for (const filePath of this.projectStructure) {
+      const fileName = filePath.toLowerCase();
+      
+      // Security-related files
+      if (taskLower.includes('security') || taskLower.includes('vulnerability') || taskLower.includes('auth')) {
+        if (fileName.includes('auth') || fileName.includes('login') || fileName.includes('user') || 
+            fileName.includes('security') || fileName.includes('validation') || fileName.includes('middleware')) {
+          relevantFiles.push(filePath);
+        }
+      }
+      
+      // Performance-related files
+      if (taskLower.includes('performance') || taskLower.includes('optimize') || taskLower.includes('bottleneck')) {
+        if (fileName.includes('query') || fileName.includes('database') || fileName.includes('api') || 
+            fileName.includes('service') || fileName.includes('model')) {
+          relevantFiles.push(filePath);
+        }
+      }
+      
+      // General code quality
+      if (taskLower.includes('quality') || taskLower.includes('complexity') || taskLower.includes('maintainability')) {
+        if (fileName.includes('.js') || fileName.includes('.ts') || fileName.includes('.py') || 
+            fileName.includes('.java') || fileName.includes('.cpp')) {
+          relevantFiles.push(filePath);
+        }
+      }
+      
+      // Default: include main project files
+      if (relevantFiles.length === 0 && (fileName.includes('index') || fileName.includes('main') || 
+          fileName.includes('app') || fileName.includes('package.json'))) {
+        relevantFiles.push(filePath);
+      }
+    }
+    
+    // Limit to top 5 most relevant files to avoid token limits
+    return relevantFiles.slice(0, 5);
+  }
+
+  private formatFileContent(filePaths: string[]): string {
+    if (filePaths.length === 0) {
+      return 'No specific files available. Provide general analysis based on common patterns.';
+    }
+    
+    let content = 'Available files for analysis:\n\n';
+    
+    for (const filePath of filePaths) {
+      const fileContent = this.projectFiles.get(filePath);
+      if (fileContent) {
+        content += `=== ${filePath} ===\n${fileContent}\n\n`;
+      }
+    }
+    
+    return content;
   }
   
   private async mainLoop() {
@@ -376,7 +489,17 @@ REPORT FORMAT: Provide specific findings with file paths, line numbers, and acti
           `User instruction: ${userInstruction}. Process this instruction and continue with analysis.` :
           this.currentTask || 'Start the analysis.';
         
-        const smithsPlan = await this.getSmithsNextMove(taskPrompt);
+        // Add anti-repetition logic
+        const recentActions = this.history.slice(-3).map(h => h.role);
+        const debuggerCount = recentActions.filter(role => role.includes('Debugger')).length;
+        
+        let enhancedTaskPrompt = taskPrompt;
+        if (debuggerCount >= 2) {
+          this.logToTerminal('AgentSmith', 'Detected repetitive Debugger usage. Forcing progression to other agents.');
+          enhancedTaskPrompt += ' NOTE: Avoid Debugger assignment. Prioritize Optimizer or Fixer for next action.';
+        }
+        
+        const smithsPlan = await this.getSmithsNextMove(enhancedTaskPrompt);
         this.currentTask = smithsPlan;
 
         if (smithsPlan.toLowerCase().includes('complete') || smithsPlan.toLowerCase().includes('finished')) {
@@ -391,20 +514,29 @@ REPORT FORMAT: Provide specific findings with file paths, line numbers, and acti
         let workerId: keyof typeof this.agents | null = null;
         const plan = smithsPlan.toLowerCase();
         
-        // Enhanced worker assignment logic with better fallback
+        // Enhanced worker assignment logic with anti-repetition
         if (plan.includes('assign debugger') || plan.includes('debug') || plan.includes('scan') || plan.includes('find bug') || plan.includes('security') || plan.includes('vulnerability') || plan.includes('quality') || plan.includes('audit')) {
+          // Only assign Debugger if we haven't used it recently
+          if (debuggerCount < 2) {
             workerId = 'b';
             this.logToTerminal('AgentSmith', 'Assigning task to Debugger (Agent B)');
+          } else {
+            this.logToTerminal('AgentSmith', 'Skipping Debugger due to recent overuse. Forcing Optimizer assignment.');
+            workerId = 'c';
+          }
         } else if (plan.includes('assign optimizer') || plan.includes('optimize') || plan.includes('refactor') || plan.includes('improve performance') || plan.includes('performance') || plan.includes('bottleneck') || plan.includes('memory') || plan.includes('database')) {
             workerId = 'c';
             this.logToTerminal('AgentSmith', 'Assigning task to Optimizer (Agent C)');
         } else if (plan.includes('assign fixer') || plan.includes('fix') || plan.includes('patch') || plan.includes('implement') || plan.includes('apply') || plan.includes('correct') || plan.includes('update')) {
             workerId = 'a';
             this.logToTerminal('AgentSmith', 'Assigning task to Fixer (Agent A)');
+        } else if (plan.includes('assign codemaniac') || plan.includes('creative') || plan.includes('novel') || plan.includes('innovative') || plan.includes('experimental') || plan.includes('unconventional')) {
+            workerId = 'd';
+            this.logToTerminal('AgentSmith', 'Assigning task to CodeManiac (Agent D) for creative solutions');
         } else {
-            // Fallback: if no specific assignment, default to debugger for analysis
-            workerId = 'b';
-            this.logToTerminal('AgentSmith', 'No specific worker assigned, defaulting to Debugger for analysis.');
+            // Fallback: if no specific assignment, default to optimizer instead of debugger
+            workerId = 'c';
+            this.logToTerminal('AgentSmith', 'No specific worker assigned, defaulting to Optimizer for analysis.');
         }
 
         if (workerId) {
@@ -446,9 +578,11 @@ REPORT FORMAT: Provide specific findings with file paths, line numbers, and acti
     this.instructionHistory = [];
     this.commandHistory = [];
     this.currentHistoryIndex = -1;
+    this.projectFiles.clear();
+    this.projectStructure = [];
     this.terminal.innerHTML = '';
     this.instructionHistoryList.innerHTML = '';
-    this.tempLocationEl.textContent = 'Waiting for process to start...';
+    this.tempLocationEl.textContent = 'N/A - No Active Process';
     Object.keys(this.agents).forEach(id => this.setAgentStatus(id as keyof typeof this.agents, 'idle'));
   }
 
@@ -560,10 +694,243 @@ REPORT FORMAT: Provide specific findings with file paths, line numbers, and acti
     this.tempLocationEl.textContent = `/tmp/project-clone-${cloneId}`;
     this.logToTerminal('System', `Temp copy created at: ${this.tempLocationEl.textContent}`);
     
-    this.currentTask = `The project '${project}' has been cloned. Begin the analysis.`;
+    // Load project files for analysis
+    await this.loadProjectFiles(project);
+    
+    this.currentTask = `The project '${project}' has been cloned and files loaded. Begin the analysis.`;
     this.history.push({ role: 'user', content: this.currentTask });
     
     this.mainLoop();
+  }
+
+  private async loadProjectFiles(projectName: string): Promise<void> {
+    this.logToTerminal('System', 'Loading project files for analysis...');
+    
+    // Simulate loading common project files
+    const commonFiles = [
+      'package.json',
+      'index.js',
+      'server.js',
+      'auth.js',
+      'models/user.js',
+      'routes/api.js',
+      'middleware/validation.js',
+      'config/database.js',
+      'utils/helpers.js',
+      'README.md'
+    ];
+    
+    // Generate sample content for each file
+    for (const filePath of commonFiles) {
+      const content = this.generateSampleContent(filePath, projectName);
+      this.projectFiles.set(filePath, content);
+      this.projectStructure.push(filePath);
+    }
+    
+    this.logToTerminal('System', `Loaded ${this.projectStructure.length} files for analysis`);
+  }
+
+  private generateSampleContent(filePath: string, projectName: string): string {
+    const fileName = filePath.toLowerCase();
+    
+    if (fileName.includes('package.json')) {
+      return `{
+  "name": "${projectName}",
+  "version": "1.0.0",
+  "description": "Sample project for analysis",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "test": "jest"
+  },
+  "dependencies": {
+    "express": "^4.18.0",
+    "bcrypt": "^5.0.1",
+    "jsonwebtoken": "^8.5.1",
+    "mongoose": "^6.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.15",
+    "jest": "^27.0.0"
+  }
+}`;
+    }
+    
+    if (fileName.includes('index.js')) {
+      return `const express = require('express');
+const app = express();
+const port = process.env.PORT || 3000;
+
+app.use(express.json());
+
+app.get('/', (req, res) => {
+  res.json({ message: 'Welcome to ${projectName}' });
+});
+
+app.listen(port, () => {
+  console.log(\`Server running on port \${port}\`);
+});`;
+    }
+    
+    if (fileName.includes('server.js')) {
+      return `const express = require('express');
+const authRoutes = require('./auth');
+const apiRoutes = require('./routes/api');
+
+const app = express();
+const port = process.env.PORT || 3000;
+
+app.use(express.json());
+app.use('/auth', authRoutes);
+app.use('/api', apiRoutes);
+
+app.listen(port, () => {
+  console.log(\`Server running on port \${port}\`);
+});`;
+    }
+    
+    if (fileName.includes('auth.js')) {
+      return `const express = require('express');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const router = express.Router();
+
+// SECURITY ISSUE: No input validation
+router.post('/login', async (req, res) => {
+  const { username, password } = req.body;
+  
+  // VULNERABILITY: SQL injection possible
+  const user = await db.query(\`SELECT * FROM users WHERE username = '\${username}'\`);
+  
+  if (user && await bcrypt.compare(password, user.password)) {
+    const token = jwt.sign({ userId: user.id }, 'secret_key');
+    res.json({ token });
+  } else {
+    res.status(401).json({ error: 'Invalid credentials' });
+  }
+});
+
+module.exports = router;`;
+    }
+    
+    if (fileName.includes('user.js')) {
+      return `const mongoose = require('mongoose');
+
+const userSchema = new mongoose.Schema({
+  username: { type: String, required: true },
+  email: { type: String, required: true },
+  password: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now }
+});
+
+// PERFORMANCE ISSUE: No indexes on frequently queried fields
+module.exports = mongoose.model('User', userSchema);`;
+    }
+    
+    if (fileName.includes('api.js')) {
+      return `const express = require('express');
+const router = express.Router();
+
+// SECURITY ISSUE: No authentication middleware
+router.get('/users', async (req, res) => {
+  const users = await User.find({});
+  res.json(users);
+});
+
+// PERFORMANCE ISSUE: N+1 query problem
+router.get('/users/:id/posts', async (req, res) => {
+  const user = await User.findById(req.params.id);
+  const posts = await Post.find({ userId: user._id });
+  res.json(posts);
+});
+
+module.exports = router;`;
+    }
+    
+    if (fileName.includes('validation.js')) {
+      return `const express = require('express');
+
+// SECURITY ISSUE: Weak validation
+const validateUser = (req, res, next) => {
+  const { username, email, password } = req.body;
+  
+  if (!username || !email || !password) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+  
+  // VULNERABILITY: No email format validation
+  // VULNERABILITY: No password strength requirements
+  
+  next();
+};
+
+module.exports = { validateUser };`;
+    }
+    
+    if (fileName.includes('database.js')) {
+      return `const mongoose = require('mongoose');
+
+// PERFORMANCE ISSUE: No connection pooling
+mongoose.connect(process.env.MONGODB_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+});
+
+const db = mongoose.connection;
+db.on('error', console.error.bind(console, 'MongoDB connection error:'));
+db.once('open', () => {
+  console.log('Connected to MongoDB');
+});
+
+module.exports = db;`;
+    }
+    
+    if (fileName.includes('helpers.js')) {
+      return `// PERFORMANCE ISSUE: Inefficient helper functions
+function findUserById(id) {
+  return User.findById(id); // No caching
+}
+
+function processData(data) {
+  // COMPLEXITY ISSUE: Nested loops causing O(n²) complexity
+  const result = [];
+  for (let i = 0; i < data.length; i++) {
+    for (let j = 0; j < data[i].items.length; j++) {
+      result.push(data[i].items[j]);
+    }
+  }
+  return result;
+}
+
+module.exports = { findUserById, processData };`;
+    }
+    
+    if (fileName.includes('readme.md')) {
+      return `# ${projectName}
+
+A sample project for analysis.
+
+## Installation
+\`\`\`bash
+npm install
+\`\`\`
+
+## Usage
+\`\`\`bash
+npm start
+\`\`\`
+
+## Features
+- User authentication
+- API endpoints
+- Database integration`;
+    }
+    
+    // Default content for other files
+    return `// ${filePath}
+// Sample content for analysis
+console.log('Hello from ${filePath}');`;
   }
 
   public togglePause() {
