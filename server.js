@@ -64,6 +64,11 @@ function proxyRequest(targetUrl, req, res) {
     targetPath = req.url.replace('/api/deepseek', '');
   }
   
+  // For XAI API, we need to handle the path differently since we're already pointing to /v1
+  if (req.url.startsWith('/api/xai') && targetPath.startsWith('/v1/')) {
+    targetPath = targetPath.replace('/v1/', '/');
+  }
+  
   // Clean headers for proxy
   const cleanHeaders = { ...req.headers };
   delete cleanHeaders.host;
@@ -95,8 +100,7 @@ function proxyRequest(targetUrl, req, res) {
   };
 
   // Debug logging
-  console.log(`Proxying to: ${url.protocol}//${url.hostname}${url.pathname}${targetPath}`);
-  console.log(`Full URL: ${url.protocol}//${url.hostname}${url.pathname}${targetPath}`);
+  console.log(`Proxying to: ${url.protocol}//${url.hostname}${cleanPath}`);
   console.log(`API Key length: ${process.env.XAI_API_KEY ? process.env.XAI_API_KEY.length : 0}`);
 
   const client = url.protocol === 'https:' ? https : http;
@@ -138,7 +142,7 @@ app.use('/api/xai', (req, res) => {
   console.log(`XAI API request: ${req.method} ${req.url}`);
   console.log(`XAI API key present: ${!!process.env.XAI_API_KEY}`);
   
-  proxyRequest('https://api.x.ai', req, res);
+  proxyRequest('https://api.x.ai/v1', req, res);
 });
 
 // Proxy for DeepSeek API
