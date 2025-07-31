@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { ConfigPanel } from './components/ConfigPanel';
 import { StatusView } from './components/StatusView';
 import { WorkspaceView } from './components/WorkspaceView';
@@ -31,6 +31,9 @@ const App: React.FC = () => {
     const [messages, setMessages] = useState<Message[]>([]);
     const [workspaceContent, setWorkspaceContent] = useState<string>('');
     const [activeAgentId, setActiveAgentId] = useState<string | null>(null);
+    
+    // Use ref to track running state for immediate access
+    const isRunningRef = useRef<boolean>(false);
 
     // Terminal State
     const [terminalLines, setTerminalLines] = useState<string[]>(['<span class="text-green-400">Welcome to the SkynetAI Direct Command Interface.</span>', 'Type `help` for a list of commands.']);
@@ -61,6 +64,7 @@ const App: React.FC = () => {
 
     const stopMission = () => {
         console.log('Stopping mission...');
+        isRunningRef.current = false;
         setIsRunning(false);
         setIsPaused(false);
         setIsWaitingForInput(false);
@@ -85,6 +89,7 @@ const App: React.FC = () => {
     const handleStart = useCallback(async () => {
         if (!objective || !sourcePath) return;
         
+        isRunningRef.current = true;
         setIsRunning(true);
         setIsPaused(false);
         setIsWaitingForInput(false);
@@ -102,16 +107,14 @@ const App: React.FC = () => {
 
         let loopCount = 0;
         const maxLoops = 20; // Increased loop limit for more complex tasks
-        let localIsRunning = true; // Local variable to track running state
 
         try {
-            while (loopCount < maxLoops && localIsRunning) {
+            while (loopCount < maxLoops && isRunningRef.current) {
                 loopCount++;
 
                 // Check if mission was stopped
-                if (!isRunning) {
-                    console.log('Mission stopped - isRunning is false');
-                    localIsRunning = false;
+                if (!isRunningRef.current) {
+                    console.log('Mission stopped - isRunningRef is false');
                     addMessage('master', 'AgentSmith', 'info', 'Mission execution stopped.');
                     break;
                 }
@@ -245,6 +248,7 @@ const App: React.FC = () => {
             }
             console.error(error);
         } finally {
+            isRunningRef.current = false;
             setIsRunning(false);
             setIsPaused(false);
             setActiveAgentId(null);
