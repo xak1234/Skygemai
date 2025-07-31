@@ -123,7 +123,7 @@ class AgentSmithOpsHub {
           'Accept': 'application/json'
         },
         body: JSON.stringify({
-          model: 'grok-beta',
+          model: 'grok',
           messages: [
             {
               role: 'user',

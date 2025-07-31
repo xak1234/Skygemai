@@ -79,10 +79,14 @@ function proxyRequest(targetUrl, req, res) {
     cleanHeaders.cookie = cookies.join(';');
   }
   
+  // Fix double slash issue
+  const fullPath = url.pathname + targetPath;
+  const cleanPath = fullPath.replace(/\/+/g, '/'); // Replace multiple slashes with single slash
+  
   const options = {
     hostname: url.hostname,
     port: url.port || (url.protocol === 'https:' ? 443 : 80),
-    path: url.pathname + targetPath,
+    path: cleanPath,
     method: req.method,
     headers: {
       ...cleanHeaders,
@@ -92,10 +96,13 @@ function proxyRequest(targetUrl, req, res) {
 
   // Debug logging
   console.log(`Proxying to: ${url.protocol}//${url.hostname}${url.pathname}${targetPath}`);
+  console.log(`Full URL: ${url.protocol}//${url.hostname}${url.pathname}${targetPath}`);
+  console.log(`API Key length: ${process.env.XAI_API_KEY ? process.env.XAI_API_KEY.length : 0}`);
 
   const client = url.protocol === 'https:' ? https : http;
   
   const proxyReq = client.request(options, (proxyRes) => {
+    console.log(`Proxy response status: ${proxyRes.statusCode}`);
     res.writeHead(proxyRes.statusCode, proxyRes.headers);
     proxyRes.pipe(res);
   });
