@@ -124,6 +124,7 @@
         
         async function checkAPIStatus() {
             try {
+                console.log('Testing Grok API connection...');
                 const response = await fetch('/api/test-grok', {
                     method: 'POST',
                     headers: {

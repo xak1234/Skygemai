@@ -1,23 +1,17 @@
 import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
 import { Agent, AgentSmithDecision } from '../types';
-import { createGrokService } from './grokService';
+import { createGrokClientService } from './grokClientService';
 
 // Get API keys from environment (will be injected by Vite)
 const getApiKeys = () => {
-    const xaiApiKey = process.env.XAI_API_KEY;
     const deepSeekApiKey = process.env.DEEPSEEK_API_KEY;
-    
-    if (!xaiApiKey) {
-        console.error("XAI_API_KEY environment variable not set.");
-        throw new Error("XAI_API_KEY environment variable not set.");
-    }
     
     if (!deepSeekApiKey) {
         console.error("DEEPSEEK_API_KEY environment variable not set.");
         throw new Error("DEEPSEEK_API_KEY environment variable not set.");
     }
     
-    return { xaiApiKey, deepSeekApiKey };
+    return { deepSeekApiKey };
 };
 
 // Initialize AI providers
@@ -26,8 +20,8 @@ let deepSeekAI: GoogleGenAI | null = null;
 
 const initializeAIProviders = () => {
     if (!grokService || !deepSeekAI) {
-        const { xaiApiKey, deepSeekApiKey } = getApiKeys();
-        grokService = createGrokService();
+        const { deepSeekApiKey } = getApiKeys();
+        grokService = createGrokClientService();
         deepSeekAI = new GoogleGenAI({ apiKey: deepSeekApiKey });
     }
     return { grokService, deepSeekAI };

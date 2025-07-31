@@ -105,6 +105,63 @@ app.post('/api/test-grok', async (req, res) => {
   }
 });
 
+// Full Grok chat completion endpoint
+app.post('/api/grok-chat', async (req, res) => {
+  try {
+    const apiKey = process.env.XAI_API_KEY;
+    
+    if (!apiKey) {
+      return res.status(500).json({ 
+        error: 'XAI_API_KEY not configured',
+        message: 'Please set the XAI_API_KEY environment variable on Render'
+      });
+    }
+    
+    const { messages, model = "grok-4", stream = false } = req.body;
+    
+    if (!messages || !Array.isArray(messages)) {
+      return res.status(400).json({ 
+        error: 'Invalid request',
+        message: 'Messages array is required'
+      });
+    }
+
+    const requestBody = {
+      messages,
+      model,
+      stream
+    };
+
+    const response = await fetch('https://api.x.ai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify(requestBody)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      return res.status(response.status).json({ 
+        error: 'Grok API request failed',
+        status: response.status,
+        details: errorText
+      });
+    }
+
+    const data = await response.json();
+    res.json(data);
+    
+  } catch (error) {
+    console.error('Grok chat completion error:', error);
+    res.status(500).json({ 
+      error: 'Internal server error',
+      message: error.message 
+    });
+  }
+});
+
 // Handle SPA routing - serve index.html for all routes
 app.get('*', (req, res) => {
   const indexPath = path.join(__dirname, 'dist', 'index.html');
