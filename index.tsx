@@ -115,8 +115,7 @@ class AgentSmithOpsHub {
     try {
       const fullPrompt = `AgentSmith: Orchestrate project analysis. History: ${this.history.map(h => `${h.role}: ${h.content}`).join(' | ')}. Current: ${prompt}. Output: Single action command or "Analysis complete." Examples: "Assign Debugger scan auth.js" or "Optimizer found N+1 query. Assign Fixer."`;
 
-                    const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:3001' : '';
-      const response = await fetch(`${apiBase}/api/xai/v1/chat/completions`, {
+      const response = await fetch('/api/xai/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -188,8 +187,7 @@ class AgentSmithOpsHub {
     try {
         const workerPrompt = `${agent.role} agent: Task "${task}". Report: ${agent.role === 'Debugger' ? 'Code issue with file/line' : agent.role === 'Optimizer' ? 'Performance bottleneck with metrics' : 'Code fix with technical details'}. Example: "Found null pointer in auth.js:42."`;
 
-        const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:3001' : '';
-        const response = await fetch(`${apiBase}/api/deepseek/chat/completions`, {
+        const response = await fetch('/api/deepseek/chat/completions', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

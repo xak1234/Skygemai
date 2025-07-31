@@ -14,7 +14,7 @@ const PORT = process.env.PORT || 3001;
 // Enable CORS for all routes
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://skygemaix.onrender.com', 'https://*.onrender.com', 'https://skygemaix.onrender.com']
+    ? ['https://skygemaix.onrender.com', 'https://*.onrender.com']
     : ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175', 'http://localhost:3001'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
