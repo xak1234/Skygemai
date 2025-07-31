@@ -32,13 +32,14 @@ if (process.env.NODE_ENV === 'production') {
 app.use('/api/xai', createProxyMiddleware({
   target: 'https://api.x.ai',
   changeOrigin: true,
-  pathRewrite: (path) => {
-    return path.replace('/api/xai', '');
-  },
   onProxyReq: (proxyReq, req, res) => {
     // Forward the Authorization header
     if (req.headers.authorization) {
       proxyReq.setHeader('Authorization', req.headers.authorization);
+    }
+    // Remove /api/xai prefix from the path
+    if (req.url.startsWith('/api/xai')) {
+      proxyReq.path = req.url.replace('/api/xai', '');
     }
   }
 }));
@@ -47,13 +48,14 @@ app.use('/api/xai', createProxyMiddleware({
 app.use('/api/deepseek', createProxyMiddleware({
   target: 'https://api.deepseek.com',
   changeOrigin: true,
-  pathRewrite: (path) => {
-    return path.replace('/api/deepseek', '/v1');
-  },
   onProxyReq: (proxyReq, req, res) => {
     // Forward the Authorization header
     if (req.headers.authorization) {
       proxyReq.setHeader('Authorization', req.headers.authorization);
+    }
+    // Replace /api/deepseek with /v1
+    if (req.url.startsWith('/api/deepseek')) {
+      proxyReq.path = req.url.replace('/api/deepseek', '/v1');
     }
   }
 }));
