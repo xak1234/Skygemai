@@ -2,12 +2,16 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import fetch from 'node-fetch';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Add JSON parsing middleware
+app.use(express.json());
 
 // Serve static files from the dist directory
 app.use(express.static(path.join(__dirname, 'dist'), {
@@ -35,6 +39,71 @@ app.use(express.static(path.join(__dirname, 'dist'), {
     }
   }
 }));
+
+// Test endpoint for Grok API
+app.post('/api/test-grok', async (req, res) => {
+  try {
+    const apiKey = process.env.XAI_API_KEY;
+    
+    if (!apiKey) {
+      return res.status(500).json({ 
+        error: 'XAI_API_KEY not configured',
+        message: 'Please set the XAI_API_KEY environment variable on Render'
+      });
+    }
+    
+    const { question = "Hello Grok! Can you confirm you're working?" } = req.body;
+    
+    const requestBody = {
+      messages: [
+        {
+          role: "system",
+          content: "You are Grok, a highly intelligent, helpful AI assistant. Keep responses concise."
+        },
+        {
+          role: "user",
+          content: question
+        }
+      ],
+      model: "grok-4",
+      stream: false
+    };
+
+    const response = await fetch('https://api.x.ai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify(requestBody)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      return res.status(response.status).json({ 
+        error: 'Grok API request failed',
+        status: response.status,
+        details: errorText
+      });
+    }
+
+    const data = await response.json();
+    
+    res.json({
+      success: true,
+      message: data.choices[0].message.content,
+      usage: data.usage,
+      model: data.model
+    });
+    
+  } catch (error) {
+    console.error('Grok API test error:', error);
+    res.status(500).json({ 
+      error: 'Internal server error',
+      message: error.message 
+    });
+  }
+});
 
 // Handle SPA routing - serve index.html for all routes
 app.get('*', (req, res) => {

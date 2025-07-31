@@ -1,14 +1,15 @@
 import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
 import { Agent, AgentSmithDecision } from '../types';
+import { createGrokService } from './grokService';
 
 // Get API keys from environment (will be injected by Vite)
 const getApiKeys = () => {
-    const grokApiKey = process.env.GROK_API_KEY;
+    const xaiApiKey = process.env.XAI_API_KEY;
     const deepSeekApiKey = process.env.DEEPSEEK_API_KEY;
     
-    if (!grokApiKey) {
-        console.error("GROK_API_KEY environment variable not set.");
-        throw new Error("GROK_API_KEY environment variable not set.");
+    if (!xaiApiKey) {
+        console.error("XAI_API_KEY environment variable not set.");
+        throw new Error("XAI_API_KEY environment variable not set.");
     }
     
     if (!deepSeekApiKey) {
@@ -16,20 +17,20 @@ const getApiKeys = () => {
         throw new Error("DEEPSEEK_API_KEY environment variable not set.");
     }
     
-    return { grokApiKey, deepSeekApiKey };
+    return { xaiApiKey, deepSeekApiKey };
 };
 
 // Initialize AI providers
-let grokAI: GoogleGenAI | null = null;
+let grokService: any = null;
 let deepSeekAI: GoogleGenAI | null = null;
 
 const initializeAIProviders = () => {
-    if (!grokAI || !deepSeekAI) {
-        const { grokApiKey, deepSeekApiKey } = getApiKeys();
-        grokAI = new GoogleGenAI({ apiKey: grokApiKey });
+    if (!grokService || !deepSeekAI) {
+        const { xaiApiKey, deepSeekApiKey } = getApiKeys();
+        grokService = createGrokService();
         deepSeekAI = new GoogleGenAI({ apiKey: deepSeekApiKey });
     }
-    return { grokAI, deepSeekAI };
+    return { grokService, deepSeekAI };
 };
 
 const agentSmithResponseSchema = {
@@ -62,20 +63,23 @@ const sanitizeJson = (rawText: string): string => {
 const generateAgentSmithDecisionWithRetry = async (
     prompt: string,
     maxRetries: number = 3
-): Promise<GenerateContentResponse> => {
-    const { grokAI } = initializeAIProviders();
+): Promise<string> => {
+    const { grokService } = initializeAIProviders();
     let lastError: any = null;
     for (let i = 0; i < maxRetries; i++) {
         try {
-            const response = await grokAI.models.generateContent({
-                model: 'grok-beta', // Using Grok for strategic decisions
-                contents: prompt,
-                config: {
-                    temperature: 0.2,
-                    responseMimeType: "application/json",
-                    responseSchema: agentSmithResponseSchema,
-                },
-            });
+            const systemPrompt = `You are AgentSmith, a strategic AI coordinator. You must respond with valid JSON in the following format:
+{
+    "thought": "your reasoning about the situation",
+    "plan": ["step1", "step2", "step3"],
+    "currentGoal": "current objective",
+    "suggestedAgentId": "agent_id_to_delegate_to",
+    "status": "running" or "complete",
+    "finalOutput": "final result if complete",
+    "recommendation": "next steps or recommendations"
+}`;
+            
+            const response = await grokService.askQuestion(prompt, systemPrompt);
             return response;
         } catch (error) {
             lastError = error;
@@ -140,7 +144,7 @@ export const getAgentSmithDecision = async (
     `;
 
     const response = await generateAgentSmithDecisionWithRetry(prompt);
-    const jsonText = sanitizeJson(response.text);
+    const jsonText = sanitizeJson(response);
     
     try {
         return JSON.parse(jsonText) as AgentSmithDecision;
