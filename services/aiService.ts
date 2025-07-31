@@ -1,48 +1,28 @@
-import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
 import { Agent, AgentSmithDecision } from '../types';
 import { createGrokClientService } from './grokClientService';
+import { generateDeepSeekResponseWithRetry } from './deepSeekService';
 
-// Get API keys from environment (will be injected by Vite)
-const getApiKeys = () => {
-    const deepSeekApiKey = process.env.DEEPSEEK_API_KEY;
-    
-    if (!deepSeekApiKey) {
-        console.error("DEEPSEEK_API_KEY environment variable not set.");
-        throw new Error("DEEPSEEK_API_KEY environment variable not set.");
-    }
-    
-    return { deepSeekApiKey };
-};
+// API keys are now handled in the individual services
 
 // Initialize AI providers
 let grokService: any = null;
-let deepSeekAI: GoogleGenAI | null = null;
 
 const initializeAIProviders = () => {
-    if (!grokService || !deepSeekAI) {
-        const { deepSeekApiKey } = getApiKeys();
+    if (!grokService) {
         grokService = createGrokClientService();
-        deepSeekAI = new GoogleGenAI({ apiKey: deepSeekApiKey });
     }
-    return { grokService, deepSeekAI };
+    return { grokService };
 };
 
+// AgentSmith response schema for JSON parsing
 const agentSmithResponseSchema = {
-    type: Type.OBJECT,
-    properties: {
-        thought: { type: Type.STRING },
-        plan: {
-            type: Type.ARRAY,
-            items: { type: Type.STRING },
-            optional: true,
-        },
-        currentGoal: { type: Type.STRING, optional: true },
-        suggestedAgentId: { type: Type.STRING, optional: true },
-        status: { type: Type.STRING, enum: ["running", "complete"] },
-        finalOutput: { type: Type.STRING, optional: true },
-        recommendation: { type: Type.STRING, optional: true },
-    },
-    required: ["thought", "status"]
+    thought: "string",
+    plan: "array of strings (optional)",
+    currentGoal: "string (optional)",
+    suggestedAgentId: "string (optional)",
+    status: "running or complete",
+    finalOutput: "string (optional)",
+    recommendation: "string (optional)"
 };
 
 const sanitizeJson = (rawText: string): string => {
@@ -90,18 +70,13 @@ const generateAgentSmithDecisionWithRetry = async (
 const generateWorkerResponseWithRetry = async (
     prompt: string,
     maxRetries: number = 3
-): Promise<GenerateContentResponse> => {
-    const { deepSeekAI } = initializeAIProviders();
+): Promise<string> => {
     let lastError: any = null;
     for (let i = 0; i < maxRetries; i++) {
         try {
-            const response = await deepSeekAI.models.generateContent({
-                model: 'deepseek-chat', // Using DeepSeek for worker tasks
-                contents: prompt,
-                config: {
-                    temperature: 0.4,
-                },
-            });
+            const response = await generateDeepSeekResponseWithRetry([
+                { role: "user", content: prompt }
+            ], 0.4);
             return response;
         } catch (error) {
             lastError = error;
@@ -170,7 +145,7 @@ export const executeAgentTask = async (
 
     try {
         const response = await generateWorkerResponseWithRetry(prompt);
-        return response.text;
+        return response;
     } catch (error) {
         console.error(`Error executing task for agent ${agent.name}:`, error);
         return `Error: Failed to get a response from the AI for agent ${agent.name}.`;
@@ -200,7 +175,7 @@ export const askQuestion = async (
 
     try {
         const response = await generateWorkerResponseWithRetry(prompt);
-        return response.text;
+        return response;
     } catch (error) {
         console.error(`Error asking question to ${targetName}:`, error);
         return `Error: Failed to get a response from the AI for agent ${targetName}.`;
