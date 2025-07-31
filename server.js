@@ -8,30 +8,30 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Serve static files with proper MIME types
+// Serve static files from the dist directory
 app.use(express.static(path.join(__dirname, 'dist'), {
-  setHeaders: (res, path) => {
-    if (path.endsWith('.css')) {
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.css')) {
       res.setHeader('Content-Type', 'text/css');
-    } else if (path.endsWith('.js') || path.endsWith('.tsx') || path.endsWith('.ts')) {
+    } else if (filePath.endsWith('.js')) {
       res.setHeader('Content-Type', 'application/javascript');
-    } else if (path.endsWith('.json')) {
+    } else if (filePath.endsWith('.json')) {
       res.setHeader('Content-Type', 'application/json');
-    } else if (path.endsWith('.svg')) {
+    } else if (filePath.endsWith('.svg')) {
       res.setHeader('Content-Type', 'image/svg+xml');
-    } else if (path.endsWith('.png')) {
+    } else if (filePath.endsWith('.png')) {
       res.setHeader('Content-Type', 'image/png');
-    } else if (path.endsWith('.jpg') || path.endsWith('.jpeg')) {
+    } else if (filePath.endsWith('.jpg') || filePath.endsWith('.jpeg')) {
       res.setHeader('Content-Type', 'image/jpeg');
-    } else if (path.endsWith('.gif')) {
+    } else if (filePath.endsWith('.gif')) {
       res.setHeader('Content-Type', 'image/gif');
-    } else if (path.endsWith('.ico')) {
+    } else if (filePath.endsWith('.ico')) {
       res.setHeader('Content-Type', 'image/x-icon');
     }
   }
 }));
 
-// Handle SPA routing
+// Handle SPA routing - serve index.html for all routes
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
