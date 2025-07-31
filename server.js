@@ -14,16 +14,38 @@ const PORT = process.env.PORT || 3001;
 // Enable CORS for all routes
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://skygemaix.onrender.com']
-    : ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175'],
-  credentials: true
+    ? ['https://skygemaix.onrender.com', 'https://*.onrender.com']
+    : ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175', 'http://localhost:3001'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
+  exposedHeaders: ['Set-Cookie']
 }));
 
 // Parse JSON bodies
 app.use(express.json());
 
-// Serve static files (both production and development)
-app.use(express.static(path.join(__dirname, 'dist')));
+// Add security headers and handle cookies
+app.use((req, res, next) => {
+  // Set security headers
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  
+  // Handle cookie domain issues
+  if (req.headers.cookie) {
+    // Clean up problematic cookies
+    const cookies = req.headers.cookie.split(';').filter(cookie => {
+      const [name] = cookie.trim().split('=');
+      return !name.includes('__cf_bm') && !name.includes('__cf_clearance');
+    });
+    req.headers.cookie = cookies.join(';');
+  }
+  
+  next();
+});
+
+// Note: Static files will be served after API routes
 
 // Simple proxy function
 function proxyRequest(targetUrl, req, res) {
@@ -37,13 +59,28 @@ function proxyRequest(targetUrl, req, res) {
     targetPath = req.url.replace('/api/deepseek', '');
   }
   
+  // Clean headers for proxy
+  const cleanHeaders = { ...req.headers };
+  delete cleanHeaders.host;
+  delete cleanHeaders.origin;
+  delete cleanHeaders.referer;
+  
+  // Remove problematic cookies
+  if (cleanHeaders.cookie) {
+    const cookies = cleanHeaders.cookie.split(';').filter(cookie => {
+      const [name] = cookie.trim().split('=');
+      return !name.includes('__cf_bm') && !name.includes('__cf_clearance');
+    });
+    cleanHeaders.cookie = cookies.join(';');
+  }
+  
   const options = {
     hostname: url.hostname,
     port: url.port || (url.protocol === 'https:' ? 443 : 80),
     path: url.pathname + targetPath,
     method: req.method,
     headers: {
-      ...req.headers,
+      ...cleanHeaders,
       host: url.hostname
     }
   };
@@ -84,6 +121,19 @@ app.use('/api/deepseek', (req, res) => {
   }
   proxyRequest('https://api.deepseek.com/v1', req, res);
 });
+
+// Handle Cloudflare cookie issues
+app.get('/__cf_bm', (req, res) => {
+  res.status(200).json({ message: 'Cookie handled' });
+});
+
+// Handle other Cloudflare-related paths
+app.get('/__cf_clearance', (req, res) => {
+  res.status(200).json({ message: 'Clearance handled' });
+});
+
+// Serve static files (after API routes)
+app.use(express.static(path.join(__dirname, 'dist')));
 
 // Serve index.html for all other routes (SPA fallback)
 app.get('*', (req, res) => {
