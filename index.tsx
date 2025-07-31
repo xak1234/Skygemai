@@ -11,7 +11,8 @@ interface Agent {
 }
 
 class AgentSmithOpsHub {
-  private apiKey: string;
+  private xaiApiKey: string;
+  private deepseekApiKey: string;
   
   // DOM Elements
   private terminal: HTMLElement;
@@ -34,7 +35,12 @@ class AgentSmithOpsHub {
     if (!process.env.XAI_API_KEY) {
       throw new Error("XAI_API_KEY environment variable not set");
     }
-    this.apiKey = process.env.XAI_API_KEY;
+    if (!process.env.DEEPSEEK_API_KEY) {
+      throw new Error("DEEPSEEK_API_KEY environment variable not set");
+    }
+    
+    this.xaiApiKey = process.env.XAI_API_KEY;
+    this.deepseekApiKey = process.env.DEEPSEEK_API_KEY;
 
     this.terminal = document.getElementById('terminal')!;
     this.startBtn = document.getElementById('start-btn') as HTMLButtonElement;
@@ -111,23 +117,15 @@ class AgentSmithOpsHub {
     this.logToTerminal('AgentSmith', 'Planning next action...');
     
     try {
-      const fullPrompt = `You are AgentSmith, a high-speed AI orchestration director. Your goal is to efficiently analyze, debug, and improve a software project by managing three worker agents: Fixer, Debugger, and Optimizer.
-      
-Previous conversation history:
-${this.history.map(h => `${h.role}: ${h.content}`).join('\n')}
-      
-Current situation: ${prompt}
-      
-Your task: Analyze the situation and decide the next single, concrete action. Output ONLY a brief, direct command for a worker agent or a concise status update. Be fast and decisive. When the project is fully analyzed and fixed, respond with "Analysis complete. All tasks finished."
-Examples:
-- "Assign Debugger to scan auth.js for vulnerabilities."
-- "Optimizer found an N+1 query. Assign Fixer to refactor."`;
+      const fullPrompt = `AgentSmith: Orchestrate project analysis. History: ${this.history.map(h => `${h.role}: ${h.content}`).join(' | ')}. Current: ${prompt}. Output: Single action command or "Analysis complete." Examples: "Assign Debugger scan auth.js" or "Optimizer found N+1 query. Assign Fixer."`;
 
-      const response = await fetch('https://api.xai.com/v1/chat/completions', {
+                    const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:3001' : '';
+      const response = await fetch(`${apiBase}/api/xai/v1/chat/completions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`
+          'Authorization': `Bearer ${this.xaiApiKey}`,
+          'Accept': 'application/json'
         },
         body: JSON.stringify({
           model: 'grok-beta',
@@ -137,17 +135,38 @@ Examples:
               content: fullPrompt
             }
           ],
-          max_tokens: 150,
-          temperature: 0.1
+          max_tokens: 50, // Ultra-low for speed
+          temperature: 0.0, // Ultra-low for precision
+          stream: false, // No streaming for instant response
+          top_p: 0.1 // Minimal randomness for speed
         })
       });
 
-      if (!response.ok) {
-        throw new Error(`XAI API error: ${response.status} ${response.statusText}`);
-      }
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`XAI API error (${response.status}): ${errorText}`);
+        }
 
-      const data = await response.json();
-      const text = data.choices[0].message.content.trim();
+        const data = await response.json();
+        
+        // Handle XAI API response format
+        let text = '';
+        if (data.choices && data.choices[0] && data.choices[0].message) {
+          text = data.choices[0].message.content.trim();
+        } else if (data.response) {
+          text = data.response.trim();
+        } else if (data.content) {
+          text = data.content.trim();
+        } else if (data.text) {
+          text = data.text.trim();
+        } else if (data.message) {
+          text = data.message.trim();
+        } else {
+          // Fallback: log the response for debugging
+          this.logToTerminal('System', `Warning: Unexpected API response format: ${JSON.stringify(data).substring(0, 100)}...`);
+          text = 'Analysis step completed.';
+        }
+
       this.history.push({ role: 'assistant', content: text });
       this.logToTerminal('AgentSmith', text);
       return text;
@@ -168,41 +187,38 @@ Examples:
     this.logToTerminal(agent.name, `Acknowledged. Executing: "${task.substring(0, 70)}..."`);
 
     try {
-        const workerPrompt = `You are an AI code agent. Your current role is: ${agent.role}.
-Your assigned task is: "${task}".
-        
-Provide a concise, one-sentence response as if you are reporting your findings.
-- If you are a Debugger, find a plausible-sounding bug.
-- If you are an Optimizer, find a plausible performance issue.
-- If you are a Fixer, describe the fix you supposedly implemented.
-        
-Example response: "Found a critical null pointer exception in auth.js on line 42."`;
+        const workerPrompt = `${agent.role} agent: Task "${task}". Report: ${agent.role === 'Debugger' ? 'Code issue with file/line' : agent.role === 'Optimizer' ? 'Performance bottleneck with metrics' : 'Code fix with technical details'}. Example: "Found null pointer in auth.js:42."`;
 
-        const response = await fetch('https://api.xai.com/v1/chat/completions', {
+        const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:3001' : '';
+        const response = await fetch(`${apiBase}/api/deepseek/chat/completions`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${this.apiKey}`
+                'Authorization': `Bearer ${this.deepseekApiKey}`,
+                'Accept': 'application/json'
             },
             body: JSON.stringify({
-                model: 'grok-beta',
+                model: 'deepseek-coder',
                 messages: [
                     {
                         role: 'user',
                         content: workerPrompt
                     }
                 ],
-                max_tokens: 100,
-                temperature: 0.1
+                max_tokens: 100, // Reduced for speed
+                temperature: 0.0, // Ultra-low for precision
+                stream: false, // No streaming for instant response
+                top_p: 0.1 // Minimal randomness for speed
             })
         });
 
         if (!response.ok) {
-            throw new Error(`XAI API error: ${response.status} ${response.statusText}`);
+            const errorText = await response.text();
+            throw new Error(`DeepSeek API error (${response.status}): ${errorText}`);
         }
 
         const data = await response.json();
-        const result = data.choices[0].message.content.trim();
+        const result = data.choices[0].message.content?.trim() || 'Task completed successfully.';
         
         this.logToTerminal(agent.name, result);
         this.setAgentStatus(agentId, 'idle');

@@ -1,12 +1,14 @@
 # AgentSmith Ops Hub
 
-A multi-agent AI orchestration system for analyzing, debugging, and improving software projects using XAI (Grok) API.
+A multi-agent AI orchestration system for analyzing, debugging, and improving software projects using dual AI APIs:
+- **AgentSmith (Controller)**: Powered by XAI (Grok-beta) for orchestration
+- **Worker Agents**: Powered by DeepSeek for specialized tasks
 
 ## Features
 
 - **Multi-Agent System**: Three specialized agents (Fixer, Debugger, Optimizer) managed by AgentSmith
 - **Real-time Terminal**: Live monitoring of agent activities and project analysis
-- **XAI Integration**: Powered by Grok-beta model for intelligent code analysis
+- **Dual AI Integration**: XAI for orchestration, DeepSeek for worker tasks
 - **Interactive Controls**: Start, pause, stop, and cancel operations
 
 ## Run Locally
@@ -18,10 +20,16 @@ A multi-agent AI orchestration system for analyzing, debugging, and improving so
    npm install
    ```
 
-2. Set up your XAI API key:
+2. Set up your API keys:
    - Create a `.env.local` file in the project root
-   - Add your XAI API key: `XAI_API_KEY=your_api_key_here`
-   - Get your API key from [XAI Console](https://console.x.ai/)
+   - Add your API keys:
+     ```
+     XAI_API_KEY=your_xai_api_key_here
+     DEEPSEEK_API_KEY=your_deepseek_api_key_here
+     ```
+   - Get your API keys from:
+     - [XAI Console](https://console.x.ai/) for AgentSmith orchestration
+     - [DeepSeek Platform](https://platform.deepseek.com/) for worker agents
 
 3. Run the app:
    ```bash
@@ -40,10 +48,42 @@ A multi-agent AI orchestration system for analyzing, debugging, and improving so
 
 ## API Configuration
 
-The app uses XAI's Grok-beta model for:
-- **AgentSmith**: Orchestration and decision-making
-- **Worker Agents**: Specialized code analysis tasks
+The app uses dual AI APIs for optimal performance:
+- **AgentSmith (XAI)**: Orchestration and decision-making using Grok-beta
+- **Worker Agents (DeepSeek)**: Specialized code analysis tasks using DeepSeek Coder model
+  - **Agent A (Fixer)**: Code fixing and implementation
+  - **Agent B (Debugger)**: Code debugging and vulnerability scanning
+  - **Agent C (Optimizer)**: Performance optimization and refactoring
 
 ## Deployment
 
-The app is configured for deployment on Render with environment variables already set up.
+### Render Deployment
+
+**Live Demo**: [https://skygemaix.onrender.com](https://skygemaix.onrender.com)
+
+1. **Connect to Render**:
+   - Push your code to GitHub
+   - Connect your repository to Render
+   - Set environment variables in Render dashboard:
+     - `XAI_API_KEY`: Your XAI API key
+     - `DEEPSEEK_API_KEY`: Your DeepSeek API key
+     - `NODE_ENV`: `production`
+
+2. **Build Configuration**:
+   - Build Command: `npm install && npm run build`
+   - Start Command: `npm start`
+   - The app will be available at your Render URL
+
+3. **Environment Variables**:
+   - Add your API keys in the Render dashboard
+   - The app will automatically use the production server
+
+### Local Development
+
+```bash
+# Start the proxy server
+node server.js
+
+# Start the development server
+npm run dev
+```
