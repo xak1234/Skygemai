@@ -64,7 +64,7 @@ export class GrokClientService {
         }
     }
 
-    async askQuestion(question: string, systemPrompt?: string): Promise<string> {
+    async askQuestion(question: string, systemPrompt?: string, model: string = 'grok-4'): Promise<string> {
         const messages: GrokMessage[] = [];
         
         if (systemPrompt) {
@@ -84,7 +84,7 @@ export class GrokClientService {
             content: question
         });
 
-        const response = await this.chatCompletion(messages);
+        const response = await this.chatCompletion(messages, model);
         return response.choices[0]?.message?.content || 'No response received';
     }
 

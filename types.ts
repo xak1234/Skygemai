@@ -17,7 +17,8 @@ export interface AgentSmithDecision {
   thought: string;
   plan?: string[];
   currentGoal?: string;
-  suggestedAgentId?: string;
+  suggestedAgentIds?: string[]; // Updated to support multiple agents
+  suggestedModels?: string[]; // Updated to support multiple models
   status: 'running' | 'complete';
   finalOutput?: string;
   recommendation?: string;
@@ -26,7 +27,7 @@ export interface AgentSmithDecision {
 export interface Mission {
     id: string;
     objective: string;
-    githubUrl: string;
+    githubUrl: string; // Now supports both GitHub URLs and local folder paths
     status: 'running' | 'completed' | 'error';
     createdAt: Date;
     finalOutput?: string;
@@ -40,4 +41,12 @@ export interface FirebaseConfig {
   storageBucket: string;
   messagingSenderId: string;
   appId: string;
+}
+
+// AI Model types
+export type AIModel = 'grok-4' | 'grok-3-mini' | 'grok-3-mini-fast' | 'deepseek-coder-33b-instruct';
+
+export interface ModelSelection {
+  model: AIModel;
+  reason: string;
 }

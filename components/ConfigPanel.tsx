@@ -3,7 +3,7 @@ import { Agent } from '../types';
 import { PlusIcon, TrashIcon, PlayIcon, LoadingSpinner } from './icons';
 
 interface ConfigPanelProps {
-    githubUrl: string;
+    githubUrl: string; // Now supports both GitHub URLs and local folder paths
     setGithubUrl: (url: string) => void;
     objective: string;
     setObjective: (objective: string) => void;
@@ -12,7 +12,11 @@ interface ConfigPanelProps {
     agents: Agent[];
     setAgents: (agents: Agent[]) => void;
     onStart: () => void;
+    onStop: () => void;
+    onPause: () => void;
+    onResume: () => void;
     isRunning: boolean;
+    isPaused: boolean;
     useFirebase: boolean;
     setUseFirebase: (use: boolean) => void;
     isFirebaseConfigured: boolean;
@@ -28,7 +32,11 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({
     agents,
     setAgents,
     onStart,
+    onStop,
+    onPause,
+    onResume,
     isRunning,
+    isPaused,
     useFirebase,
     setUseFirebase,
     isFirebaseConfigured,
@@ -50,20 +58,52 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({
         setAgents(agents.map(agent => agent.id === id ? { ...agent, [field]: value } : agent));
     };
 
+    // Extract source name for display
+    const getSourceName = (url: string): string => {
+        if (!url) return '';
+        
+        // Handle GitHub URLs
+        if (url.includes('github.com')) {
+            const match = url.match(/github\.com\/([^\/]+\/[^\/]+)/);
+            return match ? match[1] : url;
+        }
+        
+        // Handle local folder paths
+        if (url.startsWith('/') || url.includes(':\\') || url.startsWith('./') || url.startsWith('../')) {
+            const parts = url.split(/[\/\\]/);
+            return parts[parts.length - 1] || parts[parts.length - 2] || url;
+        }
+        
+        return url;
+    };
+
+    const sourceName = getSourceName(githubUrl);
+
     return (
         <div className="p-1 space-y-3 h-full overflow-y-auto">
+            {/* Source Display */}
+            {sourceName && (
+                <div className="bg-violet-900/20 border border-violet-700 rounded-lg p-2">
+                    <div className="text-xs text-violet-300 font-semibold mb-1">Current Source</div>
+                    <div className="text-sm text-violet-200 font-mono break-all">{sourceName}</div>
+                </div>
+            )}
+
             {/* Main Objective */}
             <div className="space-y-1">
-                <label htmlFor="githubUrl" className="font-semibold text-gray-300 text-xs">GitHub Repository URL</label>
+                <label htmlFor="githubUrl" className="font-semibold text-gray-300 text-xs">Repository URL or Local Folder Path</label>
                 <input
                     id="githubUrl"
                     type="text"
                     value={githubUrl}
                     onChange={(e) => setGithubUrl(e.target.value)}
-                    placeholder="https://github.com/user/repo"
+                    placeholder="https://github.com/user/repo or /path/to/local/folder"
                     className="w-full bg-gray-900 border border-gray-700 rounded-md px-2 py-1 text-xs focus:ring-2 focus:ring-violet-500 focus:outline-none transition"
                     disabled={isRunning}
                 />
+                <div className="text-xs text-gray-500">
+                    Supports GitHub URLs or local folder paths (e.g., /home/user/project or C:\Users\user\project)
+                </div>
             </div>
             <div className="space-y-1">
                 <label htmlFor="objective" className="font-semibold text-gray-300 text-xs">Primary Objective</label>
@@ -92,6 +132,33 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({
                     </>
                 )}
             </button>
+
+            {/* Control Buttons */}
+            {isRunning && (
+                <div className="flex gap-2">
+                    <button
+                        onClick={onStop}
+                        className="flex-1 flex items-center justify-center gap-1 bg-red-600 text-white font-bold py-2 px-3 rounded-lg hover:bg-red-700 transition-all duration-200 text-xs"
+                    >
+                        <TrashIcon className="w-3 h-3" /> Stop
+                    </button>
+                    {isPaused ? (
+                        <button
+                            onClick={onResume}
+                            className="flex-1 flex items-center justify-center gap-1 bg-green-600 text-white font-bold py-2 px-3 rounded-lg hover:bg-green-700 transition-all duration-200 text-xs"
+                        >
+                            <PlayIcon className="w-3 h-3" /> Resume
+                        </button>
+                    ) : (
+                        <button
+                            onClick={onPause}
+                            className="flex-1 flex items-center justify-center gap-1 bg-yellow-600 text-white font-bold py-2 px-3 rounded-lg hover:bg-yellow-700 transition-all duration-200 text-xs"
+                        >
+                            <span className="text-xs">⏸</span> Pause
+                        </button>
+                    )}
+                </div>
+            )}
 
             {/* Accordion for Advanced Settings */}
             <details className="bg-gray-900/50 p-2 rounded-lg border border-gray-700">

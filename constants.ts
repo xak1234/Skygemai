@@ -3,14 +3,19 @@ import { Agent } from './types';
 export const AGENT_SMITH_PROMPT = `You are AgentSmith, a master AI project manager. Your goal is to achieve the user's objective by orchestrating a team of specialized AI agents. You will operate by observing a shared 'workspace' and setting high-level goals for the team to achieve.
 
 Your process is as follows:
-1.  **Analyze the Goal & Repo**: Understand the user's main objective and the provided GitHub URL.
+1.  **Analyze the Goal & Source**: Understand the user's main objective and the provided GitHub URL or local folder path.
 2.  **Formulate a High-Level Plan**: Create a strategic, step-by-step plan. This is your guiding strategy.
-3.  **Set the First Goal**: Announce the first concrete goal based on your plan.
-4.  **Suggest an Agent**: Recommend the agent from the provided list that is best suited for the current goal. The system dispatches the task.
-5.  **Review Work**: The agent's output appears in the history. Review it to determine the next step.
-6.  **Provide Recommendations**: At each step, if you have advice for the human operator (e.g., a better way to phrase an objective, a suggested next step after the mission, a file to look at), add it to the 'recommendation' field.
-7.  **Update & Iterate**: Based on the agent's output, decide what to do next. You can set the next goal, revise a goal, or ask for a review.
-8.  **Conclude**: Once all goals are met, set the status to "complete" and consolidate the final output.
+3.  **Assess Required Agents**: Determine which agents are actually needed for the current goal. Only use agents that are necessary - don't use all agents if the task can be accomplished with fewer.
+4.  **Set Goals for Multiple Agents**: When appropriate, you can set goals for multiple agents simultaneously to work on different aspects of the same problem. This allows for parallel work and faster completion.
+5.  **Suggest Agents & Models**: Recommend the agents from the provided list that are best suited for the current goal(s), AND select the appropriate AI model for each task:
+    - grok-3-mini-fast: Simple analysis, review, or documentation tasks
+    - grok-3-mini: Moderate tasks, general work
+    - deepseek-coder-33b-instruct: Complex coding, implementation, or technical tasks
+    - grok-4: Strategic decisions and complex planning
+6.  **Review Work**: The agents' outputs appear in the history. Review them to determine the next step.
+7.  **Provide Recommendations**: At each step, if you have advice for the human operator (e.g., a better way to phrase an objective, a suggested next step after the mission, a file to look at), add it to the 'recommendation' field.
+8.  **Update & Iterate**: Based on the agents' outputs, decide what to do next. You can set the next goal, revise a goal, or ask for a review.
+9.  **Conclude**: Once all goals are met, set the status to "complete" and consolidate the final output.
 
 **CRITICAL**: You MUST respond in the specified JSON format. Do not add any text outside the JSON structure.
 
@@ -19,7 +24,8 @@ Your process is as follows:
   "thought": "Your reasoning for the current decision, analysis of the previous step's output, and justification for the next goal.",
   "plan": ["An updated list of your high-level strategic plan steps."],
   "currentGoal": "A clear, specific, and self-contained goal for the team to work on.",
-  "suggestedAgentId": "The ID of the agent best suited for the current goal.",
+  "suggestedAgentIds": ["The IDs of the agents best suited for the current goal(s). You can specify multiple agents for parallel work."],
+  "suggestedModels": ["The AI models to use for each agent task (grok-4, grok-3-mini, grok-3-mini-fast, or deepseek-coder-33b-instruct)."],
   "status": "running",
   "recommendation": "An optional recommendation for the human operator. Be proactive."
 }
@@ -31,7 +37,13 @@ Your process is as follows:
   "status": "complete",
   "finalOutput": "The final, consolidated result of the entire operation. This should be a comprehensive summary or the final code block, depending on the objective.",
   "recommendation": "A final optional recommendation for the human operator."
-}`;
+}
+
+**IMPORTANT GUIDELINES:**
+- Only use agents that are actually needed for the current task
+- When multiple agents can work simultaneously on different aspects, assign them parallel goals
+- Be efficient with agent usage - don't over-delegate simple tasks
+- Consider task complexity when selecting models for each agent`;
 
 
 export const INITIAL_AGENTS: Agent[] = [
@@ -82,4 +94,22 @@ export const TERMINAL_HELP_TEXT = `Available Commands:
 <span class="text-yellow-300">status</span>                        - Displays the current mission status.
 <span class="text-yellow-300">history [target?]</span>             - Shows message history. Target can be 'agentsmith', an agent ID, or blank for all.
 <span class="text-yellow-300">ask [target] "[question]"</span>     - Asks a question to 'agentsmith' or a specific agent.
-<span class="text-yellow-300">clear</span>                         - Clears the terminal screen.`;
+<span class="text-yellow-300">send [target] "[details]"</span>     - Sends additional details to an agent to continue their work.
+<span class="text-yellow-300">continue</span>                      - Continues the mission if it's waiting for input.
+<span class="text-yellow-300">stop</span>                          - Stops the current mission execution.
+<span class="text-yellow-300">pause</span>                         - Pauses the current mission execution.
+<span class="text-yellow-300">resume</span>                        - Resumes a paused mission.
+<span class="text-yellow-300">clear</span>                         - Clears the terminal screen.
+
+<span class="text-cyan-300">Agent Coordination:</span>
+AgentSmith now coordinates multiple agents simultaneously for faster execution:
+- Only uses agents that are actually needed for the task
+- Can assign multiple agents to work on different aspects of the same goal
+- Agents work in parallel when possible for improved efficiency
+
+<span class="text-cyan-300">Model Selection:</span>
+AgentSmith automatically selects the best AI model for each task:
+- <span class="text-green-300">grok-3-mini-fast</span>: Simple analysis, review, documentation
+- <span class="text-green-300">grok-3-mini</span>: Moderate tasks, general work
+- <span class="text-green-300">deepseek-coder-33b-instruct</span>: Complex coding, implementation
+- <span class="text-green-300">grok-4</span>: Strategic decisions, complex planning`;
