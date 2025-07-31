@@ -51,28 +51,28 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({
     };
 
     return (
-        <div className="p-1 space-y-6 h-full overflow-y-auto">
+        <div className="p-1 space-y-3 h-full overflow-y-auto">
             {/* Main Objective */}
-            <div className="space-y-2">
-                <label htmlFor="githubUrl" className="font-semibold text-gray-300">GitHub Repository URL</label>
+            <div className="space-y-1">
+                <label htmlFor="githubUrl" className="font-semibold text-gray-300 text-xs">GitHub Repository URL</label>
                 <input
                     id="githubUrl"
                     type="text"
                     value={githubUrl}
                     onChange={(e) => setGithubUrl(e.target.value)}
                     placeholder="https://github.com/user/repo"
-                    className="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 focus:ring-2 focus:ring-violet-500 focus:outline-none transition"
+                    className="w-full bg-gray-900 border border-gray-700 rounded-md px-2 py-1 text-xs focus:ring-2 focus:ring-violet-500 focus:outline-none transition"
                     disabled={isRunning}
                 />
             </div>
-            <div className="space-y-2">
-                <label htmlFor="objective" className="font-semibold text-gray-300">Primary Objective</label>
+            <div className="space-y-1">
+                <label htmlFor="objective" className="font-semibold text-gray-300 text-xs">Primary Objective</label>
                 <textarea
                     id="objective"
                     value={objective}
                     onChange={(e) => setObjective(e.target.value)}
                     placeholder="e.g., 'Refactor the main component for better performance.'"
-                    className="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 h-24 focus:ring-2 focus:ring-violet-500 focus:outline-none transition"
+                    className="w-full bg-gray-900 border border-gray-700 rounded-md px-2 py-1 h-16 text-xs focus:ring-2 focus:ring-violet-500 focus:outline-none transition"
                     disabled={isRunning}
                 />
             </div>
@@ -80,7 +80,7 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({
             <button
                 onClick={onStart}
                 disabled={isRunning || !githubUrl || !objective}
-                className="w-full flex items-center justify-center gap-2 bg-violet-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-violet-700 disabled:bg-gray-600 disabled:cursor-not-allowed transition-all duration-200 text-lg"
+                className="w-full flex items-center justify-center gap-2 bg-violet-600 text-white font-bold py-2 px-3 rounded-lg hover:bg-violet-700 disabled:bg-gray-600 disabled:cursor-not-allowed transition-all duration-200 text-sm"
             >
                 {isRunning ? (
                     <>
@@ -94,16 +94,16 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({
             </button>
 
             {/* Accordion for Advanced Settings */}
-            <details className="bg-gray-900/50 p-4 rounded-lg border border-gray-700">
-                <summary className="font-semibold text-gray-300 cursor-pointer">Advanced Settings</summary>
-                <div className="mt-4 space-y-6">
-                     <div className="space-y-3">
-                        <h3 className="text-lg font-semibold text-gray-300">Persistence</h3>
+            <details className="bg-gray-900/50 p-2 rounded-lg border border-gray-700">
+                <summary className="font-semibold text-gray-300 cursor-pointer text-xs">Advanced Settings</summary>
+                <div className="mt-2 space-y-3">
+                     <div className="space-y-2">
+                        <h3 className="text-sm font-semibold text-gray-300">Persistence</h3>
                         <div
                             title={!isFirebaseConfigured ? "Firebase is not configured. Persistence is disabled." : ""}
-                            className="flex items-center justify-between bg-gray-800 p-3 rounded-lg"
+                            className="flex items-center justify-between bg-gray-800 p-2 rounded-lg"
                         >
-                            <label htmlFor="firebase-toggle" className="font-medium text-gray-300">
+                            <label htmlFor="firebase-toggle" className="font-medium text-gray-300 text-xs">
                                 Save mission data to Firebase
                             </label>
                             <div className="relative inline-flex items-center cursor-pointer">
@@ -121,48 +121,48 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({
                          {!isFirebaseConfigured && <p className="text-xs text-yellow-400">Firebase credentials are not set in firebaseService.ts. Persistence is disabled.</p>}
                     </div>
                     {/* AgentSmith Config */}
-                    <div className="space-y-2">
-                        <h3 className="text-lg font-semibold text-gray-300">AgentSmith Role</h3>
+                    <div className="space-y-1">
+                        <h3 className="text-sm font-semibold text-gray-300">AgentSmith Role</h3>
                         <textarea
                             value={agentSmithPrompt}
                             onChange={(e) => setAgentSmithPrompt(e.target.value)}
-                            className="w-full bg-gray-800 border border-gray-600 rounded-md px-3 py-2 h-40 text-sm focus:ring-2 focus:ring-violet-500 focus:outline-none transition"
+                            className="w-full bg-gray-800 border border-gray-600 rounded-md px-2 py-1 h-24 text-xs focus:ring-2 focus:ring-violet-500 focus:outline-none transition"
                             disabled={isRunning}
                         />
                     </div>
 
                     {/* Agent Config */}
-                    <div className="space-y-4">
+                    <div className="space-y-2">
                         <div className="flex justify-between items-center">
-                            <h3 className="text-lg font-semibold text-gray-300">Agent Roster</h3>
+                            <h3 className="text-sm font-semibold text-gray-300">Agent Roster</h3>
                             <button
                                 onClick={addAgent}
                                 disabled={isRunning}
-                                className="flex items-center gap-1 bg-green-600/20 text-green-400 px-3 py-1 rounded-md hover:bg-green-600/40 transition"
+                                className="flex items-center gap-1 bg-green-600/20 text-green-400 px-2 py-1 rounded-md hover:bg-green-600/40 transition text-xs"
                             >
-                                <PlusIcon className="w-4 h-4" /> Add
+                                <PlusIcon className="w-3 h-3" /> Add
                             </button>
                         </div>
-                        <p className="text-xs text-gray-400 -mt-3">Customize your team. Add more specialists or remove agents as needed for the mission.</p>
-                        <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
+                        <p className="text-xs text-gray-400 -mt-1">Customize your team. Add more specialists or remove agents as needed for the mission.</p>
+                        <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                             {agents.map((agent) => (
-                                <div key={agent.id} className="bg-gray-800 p-4 rounded-lg border border-gray-700 space-y-2">
+                                <div key={agent.id} className="bg-gray-800 p-2 rounded-lg border border-gray-700 space-y-1">
                                     <div className="flex justify-between items-center">
                                         <input
                                             type="text"
                                             value={agent.name}
                                             onChange={(e) => updateAgent(agent.id, 'name', e.target.value)}
-                                            className="font-bold bg-transparent focus:outline-none text-violet-400"
+                                            className="font-bold bg-transparent focus:outline-none text-violet-400 text-xs"
                                             disabled={isRunning}
                                         />
                                         <button onClick={() => removeAgent(agent.id)} disabled={isRunning} className="text-red-500 hover:text-red-400">
-                                            <TrashIcon className="w-5 h-5" />
+                                            <TrashIcon className="w-4 h-4" />
                                         </button>
                                     </div>
                                     <textarea
                                         value={agent.role}
                                         onChange={(e) => updateAgent(agent.id, 'role', e.target.value)}
-                                        className="w-full bg-gray-900 border border-gray-600 rounded-md px-3 py-2 h-28 text-sm focus:ring-2 focus:ring-violet-500 focus:outline-none transition"
+                                        className="w-full bg-gray-900 border border-gray-600 rounded-md px-2 py-1 h-16 text-xs focus:ring-2 focus:ring-violet-500 focus:outline-none transition"
                                         placeholder="Agent's role/prompt..."
                                         disabled={isRunning}
                                     />

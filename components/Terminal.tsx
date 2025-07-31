@@ -28,32 +28,32 @@ export const Terminal: React.FC<TerminalProps> = ({ lines, onCommand, isProcessi
     };
 
     return (
-        <div className="bg-black/70 backdrop-blur-md border-t-2 border-violet-800 flex flex-col h-full text-sm font-mono" onClick={handleClick}>
-            <div className="flex items-center gap-2 p-2 bg-gray-900/50 border-b border-gray-700 flex-shrink-0">
-                <TerminalIcon className="w-5 h-5 text-green-400" />
-                <h3 className="font-bold text-green-400">Direct Command Interface</h3>
+        <div className="bg-black/70 backdrop-blur-md border-t-2 border-violet-800 flex flex-col h-full text-xs font-mono" onClick={handleClick}>
+            <div className="flex items-center gap-1 p-1 bg-gray-900/50 border-b border-gray-700 flex-shrink-0">
+                <TerminalIcon className="w-4 h-4 text-green-400" />
+                <h3 className="font-bold text-green-400 text-xs">Direct Command Interface</h3>
             </div>
-            <div className="flex-grow p-2 overflow-y-auto">
+            <div className="flex-grow p-1 overflow-y-auto">
                 {lines.map((line, index) => (
-                    <div key={index} className="whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: line }} />
+                    <div key={index} className="whitespace-pre-wrap text-xs" dangerouslySetInnerHTML={{ __html: line }} />
                 ))}
                  {isProcessing && (
-                    <div className="flex items-center gap-2 text-yellow-400">
-                        <LoadingSpinner className="w-4 h-4" />
+                    <div className="flex items-center gap-1 text-yellow-400 text-xs">
+                        <LoadingSpinner className="w-3 h-3" />
                         <span>Processing...</span>
                     </div>
                  )}
                 <div ref={endOfLinesRef} />
             </div>
-            <div className="flex items-center p-2 border-t border-gray-700 flex-shrink-0">
-                <span className="text-cyan-400">CMD&gt;</span>
+            <div className="flex items-center p-1 border-t border-gray-700 flex-shrink-0">
+                <span className="text-cyan-400 text-xs">CMD&gt;</span>
                 <input
                     ref={inputRef}
                     type="text"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    className="bg-transparent border-none text-gray-200 w-full focus:outline-none pl-2"
+                    className="bg-transparent border-none text-gray-200 w-full focus:outline-none pl-1 text-xs"
                     placeholder="Type 'help' for commands..."
                     disabled={isProcessing}
                     autoFocus

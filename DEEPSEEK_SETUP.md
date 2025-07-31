@@ -1,83 +1,97 @@
-# DeepSeek API Integration
+# DeepSeek Integration Setup Guide
 
-This project now uses the DeepSeek API via the OpenAI SDK for AI-powered features.
+This guide explains how to set up and use the DeepSeek model integration using a local deployment approach.
 
-## Setup
+## 🚀 Quick Start
 
-1. **Install Dependencies**
-   ```bash
-   npm install openai
-   ```
+### 1. Install Dependencies
 
-2. **Environment Variables**
-   Set your DeepSeek API key in your environment:
-   ```bash
-   export DEEPSEEK_API_KEY="your-deepseek-api-key-here"
-   ```
-   
-   Or add it to your `.env` file:
-   ```
-   DEEPSEEK_API_KEY=your-deepseek-api-key-here
-   ```
-
-## Usage
-
-### Basic Usage
-
-```javascript
-import OpenAI from "openai";
-
-const openai = new OpenAI({
-    baseURL: 'https://api.deepseek.com',
-    apiKey: process.env.DEEPSEEK_API_KEY
-});
-
-async function main() {
-    const completion = await openai.chat.completions.create({
-        messages: [{ role: "system", content: "You are a helpful assistant." }],
-        model: "deepseek-chat",
-    });
-
-    console.log(completion.choices[0].message.content);
-}
+```bash
+npm install axios
 ```
 
-### Using the DeepSeek Service
+### 2. Environment Configuration
 
-The project includes a dedicated DeepSeek service (`services/deepSeekService.ts`) that provides:
+Add these variables to your `.env` file:
 
-- **`generateDeepSeekResponse`**: Basic API call
-- **`generateDeepSeekResponseWithRetry`**: API call with retry logic
-- **`askDeepSeek`**: Simple helper function
+```env
+# DeepSeek Configuration (for local deployment)
+# Base URL for your local DeepSeek deployment
+DEEPSEEK_BASE_URL=http://localhost:8000/v1
+# Model name for DeepSeek (default: deepseek-coder-33b-instruct)
+DEEPSEEK_MODEL=deepseek-coder-33b-instruct
+```
 
+### 3. Local DeepSeek Deployment
+
+You'll need to deploy DeepSeek locally using one of these methods:
+
+#### Option A: Using Ollama (Recommended)
+```bash
+# Install Ollama
+curl -fsSL https://ollama.ai/install.sh | sh
+
+# Pull and run DeepSeek model
+ollama pull deepseek-coder:33b-instruct
+ollama serve
+
+# In another terminal, start the OpenAI-compatible API
+ollama run llama-cpp-python --server --host 0.0.0.0 --port 8000
+```
+
+#### Option B: Using vLLM
+```bash
+# Install vLLM
+pip install vllm
+
+# Start the server
+python -m vllm.entrypoints.openai.api_server \
+    --model deepseek-ai/deepseek-coder-33b-instruct \
+    --host 0.0.0.0 \
+    --port 8000
+```
+
+#### Option C: Using LM Studio
+1. Download LM Studio
+2. Download the DeepSeek model
+3. Start the local server on port 8000
+
+## 📝 Usage Examples
+
+### Simple Prompt
 ```javascript
-import { askDeepSeek } from './services/deepSeekService';
+import { callLocalDeepSeek } from './services/deepSeekService.js';
 
-// Simple usage
-const response = await askDeepSeek(
-    "What is the capital of France?",
-    "You are a helpful assistant.",
-    0.4
+const result = await callLocalDeepSeek('Generate a Node.js Express route that serves a file download.');
+console.log(result);
+```
+
+### With System Prompt
+```javascript
+import { askDeepSeek } from './services/deepSeekService.js';
+
+const result = await askDeepSeek(
+    'Write a TypeScript function that validates email addresses.',
+    'You are a helpful coding assistant. Provide clean, well-documented code.',
+    0.2
 );
-
-// Advanced usage with custom messages
-import { generateDeepSeekResponseWithRetry } from './services/deepSeekService';
-
-const response = await generateDeepSeekResponseWithRetry([
-    { role: "system", content: "You are a coding assistant." },
-    { role: "user", content: "Write a function to sort an array." }
-], 0.4, 1000);
 ```
 
-## Integration with AI Service
+### Complex Conversation
+```javascript
+import { generateDeepSeekResponse } from './services/deepSeekService.js';
 
-The main AI service (`services/aiService.ts`) has been updated to use DeepSeek for:
+const messages = [
+    { role: 'system', content: 'You are a Python expert.' },
+    { role: 'user', content: 'How do I create a virtual environment?' },
+    { role: 'assistant', content: 'You can use the venv module.' },
+    { role: 'user', content: 'Show me the exact commands.' }
+];
 
-- **Worker Agent Tasks**: Individual agent task execution
-- **Question Answering**: Direct questions to agents
-- **AgentSmith Decisions**: Strategic coordination (still uses Grok)
+const result = await generateDeepSeekResponse(messages, 0.2, 512);
+```
 
-## Testing
+## 🧪 Testing
 
 Run the test file to verify your setup:
 
@@ -85,27 +99,78 @@ Run the test file to verify your setup:
 node deepseek-test.js
 ```
 
-Make sure your `DEEPSEEK_API_KEY` environment variable is set before running the test.
+## 🔧 Configuration Options
 
-## API Parameters
+### Environment Variables
 
-- **Model**: `deepseek-chat`
-- **Base URL**: `https://api.deepseek.com`
-- **Temperature**: Default 0.4 (configurable)
-- **Max Tokens**: Optional, configurable per request
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `DEEPSEEK_BASE_URL` | `http://localhost:8000/v1` | Base URL for your local DeepSeek deployment |
+| `DEEPSEEK_MODEL` | `deepseek-coder-33b-instruct` | Model name to use |
 
-## Error Handling
+### API Parameters
 
-The service includes comprehensive error handling with:
-- Retry logic with exponential backoff
-- Detailed error messages
-- Graceful fallbacks
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `temperature` | `0.2` | Controls randomness (0.0 = deterministic, 1.0 = very random) |
+| `max_tokens` | `512` | Maximum number of tokens to generate |
+| `do_sample` | `false` | Whether to use sampling |
 
-## Migration from Google GenAI
+## 🚨 Troubleshooting
 
-The project has been migrated from the Google GenAI SDK to the OpenAI SDK for DeepSeek integration. The main changes:
+### Common Issues
 
-1. **New Service**: `services/deepSeekService.ts`
-2. **Updated AI Service**: `services/aiService.ts` now uses the new DeepSeek service
-3. **Dependencies**: Added `openai` package, kept `@google/genai` for other features
-4. **API Calls**: Simplified message format using OpenAI SDK conventions 
+1. **Connection Refused**
+   - Make sure your local DeepSeek server is running on port 8000
+   - Check if the server is accessible at `http://localhost:8000/v1`
+
+2. **Model Not Found**
+   - Verify the model name in your deployment
+   - Check if the model is properly loaded
+
+3. **Timeout Errors**
+   - Increase timeout settings if needed
+   - Check server performance and resources
+
+### Debug Mode
+
+Enable debug logging by setting:
+```javascript
+process.env.DEBUG = 'deepseek:*';
+```
+
+## 📚 API Reference
+
+### `callLocalDeepSeek(prompt: string): Promise<string>`
+Simple function for single prompts.
+
+### `askDeepSeek(prompt: string, systemPrompt?: string, temperature?: number): Promise<string>`
+Function with optional system prompt and temperature control.
+
+### `generateDeepSeekResponse(messages: Message[], temperature?: number, maxTokens?: number): Promise<string>`
+Full conversation support with message history.
+
+### `generateDeepSeekResponseWithRetry(messages: Message[], temperature?: number, maxTokens?: number, maxRetries?: number): Promise<string>`
+Same as above but with automatic retry logic.
+
+## 🔄 Migration from Hugging Face API
+
+If you were previously using the Hugging Face API approach, the main changes are:
+
+1. **No API Key Required**: Local deployment doesn't need authentication
+2. **OpenAI-Compatible Format**: Uses standard chat completion format
+3. **Better Performance**: Local deployment is typically faster
+4. **More Control**: Full control over model parameters and deployment
+
+## 📈 Performance Tips
+
+1. **Use Appropriate Temperature**: Lower values (0.1-0.3) for coding tasks
+2. **Limit Token Count**: Set reasonable `max_tokens` to avoid long responses
+3. **Batch Requests**: Group related prompts when possible
+4. **Monitor Resources**: Keep an eye on GPU/CPU usage
+
+## 🔗 Related Files
+
+- `services/deepSeekService.ts` - Main service implementation
+- `deepseek-test.js` - Test examples
+- `env.template` - Environment configuration template 

@@ -291,22 +291,22 @@ const App: React.FC = () => {
 
     return (
         <div className="h-screen bg-gray-900 text-gray-100 flex flex-col">
-            <header className="flex-shrink-0 bg-gray-900/50 border-b border-gray-700 px-4 py-2">
-                <h1 className="text-xl font-bold text-violet-400 tracking-wider">SkynetAI</h1>
+            <header className="flex-shrink-0 bg-gray-900/50 border-b border-gray-700 px-3 py-1">
+                <h1 className="text-lg font-bold text-violet-400 tracking-wider">SkynetAI</h1>
             </header>
-            <div className="flex-grow flex flex-col lg:flex-row p-4 gap-4 min-h-0">
-                <div className="p-4 bg-gray-800/50 backdrop-blur-sm rounded-2xl border border-gray-700 space-y-4 flex-shrink-0 w-full lg:w-[450px] flex flex-col">
+            <div className="flex-grow flex flex-col lg:flex-row p-2 gap-2 min-h-0">
+                <div className="p-2 bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700 space-y-2 flex-shrink-0 w-full lg:w-[400px] flex flex-col">
                     <div className="flex-shrink-0">
-                        <div className="flex items-center border-b border-gray-700 mb-4">
-                            <button onClick={() => setActiveView('config')} className={`flex items-center gap-2 py-3 px-4 font-bold text-lg transition ${activeView === 'config' ? 'text-violet-400 border-b-2 border-violet-400' : 'text-gray-400 hover:text-white'}`}>
+                        <div className="flex items-center border-b border-gray-700 mb-2">
+                            <button onClick={() => setActiveView('config')} className={`flex items-center gap-1 py-2 px-3 font-bold text-sm transition ${activeView === 'config' ? 'text-violet-400 border-b-2 border-violet-400' : 'text-gray-400 hover:text-white'}`}>
                                 <BrainIcon /> Mission Control
                             </button>
-                            <button onClick={() => setActiveView('history')} className={`flex items-center gap-2 py-3 px-4 font-bold text-lg transition ${activeView === 'history' ? 'text-violet-400 border-b-2 border-violet-400' : 'text-gray-400 hover:text-white'}`} disabled={!firebaseService.isConfigured()}>
+                            <button onClick={() => setActiveView('history')} className={`flex items-center gap-1 py-2 px-3 font-bold text-sm transition ${activeView === 'history' ? 'text-violet-400 border-b-2 border-violet-400' : 'text-gray-400 hover:text-white'}`} disabled={!firebaseService.isConfigured()}>
                                 <HistoryIcon /> Missions
                             </button>
                         </div>
                     </div>
-                    <div className="flex-grow overflow-y-auto pr-2">
+                    <div className="flex-grow overflow-y-auto pr-1">
                         {activeView === 'config' ? (
                              <ConfigPanel
                                 githubUrl={githubUrl}
@@ -329,15 +329,14 @@ const App: React.FC = () => {
                     </div>
                 </div>
 
-
-                <main className="flex-grow flex flex-col gap-4 min-w-0 h-full">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-shrink-0 h-1/2 min-h-[300px]">
+                <main className="flex-grow flex flex-col gap-2 min-w-0 h-full">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 flex-shrink-0 h-1/3 min-h-[200px]">
                         <StatusView title="AgentSmith Status" messages={agentSmithLog} isActive={isRunning && activeAgentId === 'master'} />
                         <WorkspaceView content={workspaceContent} statusMessage={statusMessage} />
                     </div>
-                    <div className="flex gap-4 flex-grow h-1/2 min-h-[300px] overflow-x-auto pb-2">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2 flex-grow h-2/3 min-h-[300px]">
                         {agents.map(agent => (
-                           <div key={agent.id} className="w-[350px] flex-shrink-0 h-full">
+                           <div key={agent.id} className="flex flex-col h-full">
                                 <StatusView
                                     title={agent.name}
                                     messages={agentLogs[agent.id] || []}
@@ -349,7 +348,7 @@ const App: React.FC = () => {
                 </main>
             </div>
             
-            <div className="flex-shrink-0 h-[30%] bg-gray-900">
+            <div className="flex-shrink-0 h-[20%] bg-gray-900">
                  <Terminal 
                     lines={terminalLines} 
                     onCommand={handleCommand}

@@ -35,7 +35,7 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({ onSelectMission }) =
     }, [fetchMissions]);
 
     const getStatusChip = (status: Mission['status']) => {
-        const baseClasses = "px-2 py-1 text-xs font-bold rounded-full";
+        const baseClasses = "px-1 py-0.5 text-xs font-bold rounded-full";
         switch (status) {
             case 'completed':
                 return `${baseClasses} bg-green-500/20 text-green-300`;
@@ -52,30 +52,30 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({ onSelectMission }) =
         <div className="h-full flex flex-col p-1">
             {loading && (
                 <div className="flex items-center justify-center h-full">
-                    <LoadingSpinner className="w-8 h-8 text-violet-400" />
+                    <LoadingSpinner className="w-6 h-6 text-violet-400" />
                 </div>
             )}
             {error && (
-                <div className="text-center text-yellow-400 p-4">{error}</div>
+                <div className="text-center text-yellow-400 p-2 text-xs">{error}</div>
             )}
             {!loading && !error && (
-                <div className="space-y-3 overflow-y-auto">
+                <div className="space-y-2 overflow-y-auto">
                     {missions.length === 0 ? (
-                        <p className="text-gray-500 text-center italic">No saved missions found.</p>
+                        <p className="text-gray-500 text-center italic text-xs">No saved missions found.</p>
                     ) : (
                         missions.map(mission => (
                             <button
                                 key={mission.id}
                                 onClick={() => onSelectMission(mission.id)}
-                                className="w-full text-left p-4 bg-gray-900/50 hover:bg-gray-700/50 border border-gray-700 rounded-lg transition space-y-2"
+                                className="w-full text-left p-2 bg-gray-900/50 hover:bg-gray-700/50 border border-gray-700 rounded-lg transition space-y-1"
                             >
                                 <div className="flex justify-between items-center">
-                                    <p className="text-sm font-semibold text-gray-400">
+                                    <p className="text-xs font-semibold text-gray-400">
                                         {mission.createdAt.toLocaleString()}
                                     </p>
                                     <span className={getStatusChip(mission.status)}>{mission.status}</span>
                                 </div>
-                                <h4 className="font-bold text-md text-violet-300 truncate">{mission.objective}</h4>
+                                <h4 className="font-bold text-sm text-violet-300 truncate">{mission.objective}</h4>
                                 <p className="text-xs text-gray-500 truncate">{mission.githubUrl}</p>
                             </button>
                         ))

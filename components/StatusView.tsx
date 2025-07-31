@@ -60,21 +60,21 @@ export const StatusView: React.FC<StatusViewProps> = ({ title, messages, isActiv
     }, [messages]);
     
     return (
-        <div className={`bg-gray-800/50 backdrop-blur-sm rounded-2xl border ${isActive ? 'border-violet-500 shadow-lg shadow-violet-900/50' : 'border-gray-700'} flex flex-col h-full`}>
-            <div className="flex items-center gap-3 p-4 border-b border-gray-700 flex-shrink-0">
-                <BrainIcon className={`w-6 h-6 ${isActive ? 'text-violet-400' : 'text-gray-400'}`} />
-                <h3 className="text-xl font-bold text-gray-200">{title}</h3>
-                {isActive && <div className="ml-auto w-3 h-3 rounded-full bg-green-400 animate-pulse"></div>}
+        <div className={`bg-gray-800/50 backdrop-blur-sm rounded-lg border ${isActive ? 'border-violet-500 shadow-lg shadow-violet-900/50' : 'border-gray-700'} flex flex-col h-full`}>
+            <div className="flex items-center gap-2 p-2 border-b border-gray-700 flex-shrink-0">
+                <BrainIcon className={`w-4 h-4 ${isActive ? 'text-violet-400' : 'text-gray-400'}`} />
+                <h3 className="text-sm font-bold text-gray-200">{title}</h3>
+                {isActive && <div className="ml-auto w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>}
             </div>
-            <div className="p-4 space-y-3 overflow-y-auto flex-grow">
+            <div className="p-2 space-y-2 overflow-y-auto flex-grow">
                 {messages.length === 0 ? (
-                    <p className="text-gray-500 italic text-center pt-8">Awaiting instructions...</p>
+                    <p className="text-gray-500 italic text-center pt-4 text-xs">Awaiting instructions...</p>
                 ) : (
                     messages.map((msg) => (
-                        <div key={msg.id} className="text-sm leading-relaxed">
-                            <div className={`flex items-start gap-2 ${getColorForType(msg.type)}`}>
-                                <span className="mt-0.5" title={msg.type}>{getIconForType(msg.type)}</span>
-                                <p className="flex-1 whitespace-pre-wrap font-mono">{msg.content}</p>
+                        <div key={msg.id} className="text-xs leading-relaxed">
+                            <div className={`flex items-start gap-1 ${getColorForType(msg.type)}`}>
+                                <span className="mt-0.5 text-xs" title={msg.type}>{getIconForType(msg.type)}</span>
+                                <p className="flex-1 whitespace-pre-wrap font-mono text-xs">{msg.content}</p>
                             </div>
                         </div>
                     ))
