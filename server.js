@@ -90,6 +90,9 @@ function proxyRequest(targetUrl, req, res) {
     }
   };
 
+  // Debug logging
+  console.log(`Proxying to: ${url.protocol}//${url.hostname}${url.pathname}${targetPath}`);
+
   const client = url.protocol === 'https:' ? https : http;
   
   const proxyReq = client.request(options, (proxyRes) => {
@@ -111,15 +114,36 @@ function proxyRequest(targetUrl, req, res) {
 
 // Proxy for XAI API
 app.use('/api/xai', (req, res) => {
+  // Check if API key is available
+  if (!process.env.XAI_API_KEY) {
+    console.log('XAI_API_KEY environment variable not set');
+    return res.status(500).json({ 
+      error: 'XAI API key not configured. Please set XAI_API_KEY environment variable.' 
+    });
+  }
+  
   // Add XAI API key to the request
   if (!req.headers.authorization) {
     req.headers.authorization = `Bearer ${process.env.XAI_API_KEY}`;
   }
-  proxyRequest('https://api.x.ai/v1', req, res);
+  
+  // Debug logging
+  console.log(`XAI API request: ${req.method} ${req.url}`);
+  console.log(`XAI API key present: ${!!process.env.XAI_API_KEY}`);
+  
+  proxyRequest('https://api.x.ai', req, res);
 });
 
 // Proxy for DeepSeek API
 app.use('/api/deepseek', (req, res) => {
+  // Check if API key is available
+  if (!process.env.DEEPSEEK_API_KEY) {
+    console.log('DEEPSEEK_API_KEY environment variable not set');
+    return res.status(500).json({ 
+      error: 'DeepSeek API key not configured. Please set DEEPSEEK_API_KEY environment variable.' 
+    });
+  }
+  
   // Add DeepSeek API key to the request
   if (!req.headers.authorization) {
     req.headers.authorization = `Bearer ${process.env.DEEPSEEK_API_KEY}`;

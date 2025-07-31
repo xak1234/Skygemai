@@ -1,3 +1,5 @@
+import './index.css';
+
 type AgentStatus = 'idle' | 'working' | 'error';
 type AgentRole = 'Fixer' | 'Debugger' | 'Optimizer' | 'Director';
 
@@ -121,7 +123,7 @@ class AgentSmithOpsHub {
           'Accept': 'application/json'
         },
         body: JSON.stringify({
-          model: 'grok',
+          model: 'grok-beta',
           messages: [
             {
               role: 'user',
