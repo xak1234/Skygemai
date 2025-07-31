@@ -1,16 +1,15 @@
-# Skygemai
+# AgentSmith Ops Hub
 
-A React-based AI assistant application built with Vite and TypeScript.
+A multi-agent AI orchestration system for analyzing, debugging, and improving software projects using XAI (Grok) API.
 
 ## Features
 
-- Modern React 19 with TypeScript
-- Vite for fast development and building
-- Custom CSS styling (no Tailwind CDN)
-- Proper MIME type handling for production
-- Multiple deployment options
+- **Multi-Agent System**: Three specialized agents (Fixer, Debugger, Optimizer) managed by AgentSmith
+- **Real-time Terminal**: Live monitoring of agent activities and project analysis
+- **XAI Integration**: Powered by Grok-beta model for intelligent code analysis
+- **Interactive Controls**: Start, pause, stop, and cancel operations
 
-## Development
+## Run Locally
 
 **Prerequisites:** Node.js
 
@@ -19,79 +18,32 @@ A React-based AI assistant application built with Vite and TypeScript.
    npm install
    ```
 
-2. Set the `GEMINI_API_KEY` in `.env.local` to your Gemini API key
+2. Set up your XAI API key:
+   - Create a `.env.local` file in the project root
+   - Add your XAI API key: `XAI_API_KEY=your_api_key_here`
+   - Get your API key from [XAI Console](https://console.x.ai/)
 
 3. Run the app:
    ```bash
    npm run dev
    ```
 
-## Deployment Options
+4. Open your browser to `http://localhost:5173`
 
-### Option 1: Render (Recommended)
+## Usage
 
-1. Push your code to GitHub
-2. Connect your repository to Render
-3. Use the following settings:
-   - **Build Command**: `npm run build`
-   - **Publish Directory**: `dist`
-   - **Environment**: Static Site
+1. Enter a GitHub repository URL or local project path
+2. Click "Start" to begin the analysis
+3. Watch as AgentSmith orchestrates the three worker agents
+4. Monitor progress in the real-time terminal
+5. Use pause/stop controls as needed
 
-The `render.yaml` file is included for automatic configuration.
+## API Configuration
 
-### Option 2: Express Server
+The app uses XAI's Grok-beta model for:
+- **AgentSmith**: Orchestration and decision-making
+- **Worker Agents**: Specialized code analysis tasks
 
-1. Build the application: `npm run build`
-2. Start the server: `npm start`
-3. The server will run on port 3000 (or `$PORT` environment variable)
+## Deployment
 
-### Option 3: Docker
-
-1. Build the Docker image:
-   ```bash
-   docker build -t skygemai .
-   ```
-
-2. Run the container:
-   ```bash
-   docker run -p 80:80 skygemai
-   ```
-
-### Option 4: Nginx
-
-1. Build the application: `npm run build`
-2. Copy the `dist` folder to your nginx server
-3. Use the provided `nginx.conf` configuration
-
-## Troubleshooting
-
-### MIME Type Issues
-
-If you're experiencing MIME type errors:
-
-1. Ensure you're using one of the deployment options above
-2. Check that your server is configured to serve files with proper Content-Type headers
-3. For static hosting, use the provided configuration files
-
-### Build Issues
-
-1. Make sure all dependencies are installed: `npm install`
-2. Clear the build cache: `rm -rf dist`
-3. Rebuild: `npm run build`
-
-## Project Structure
-
-```
-skygemai/
-├── components/          # React components
-├── services/           # API services
-├── index.html          # Main HTML file
-├── index.tsx           # React entry point
-├── index.css           # Custom CSS styles
-├── vite.config.ts      # Vite configuration
-├── server.js           # Express server for production
-├── nginx.conf          # Nginx configuration
-├── Dockerfile          # Docker configuration
-└── render.yaml         # Render deployment config
-```
-# Force redeploy - 07/30/2025 22:03:12
+The app is configured for deployment on Render with environment variables already set up.

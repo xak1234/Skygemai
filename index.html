@@ -2,12 +2,73 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SkynetAI - Agentic Code Assistant</title>
-  </head>
-  <body class="bg-gray-900 text-gray-100">
-    <div id="root"></div>
-    <script type="module" src="/main.tsx"></script>
-  </body>
+    <title>AgentSmith Ops Hub</title>
+    <link rel="stylesheet" href="index.css" />
+    <link rel="icon" href="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/hub/default/48px.svg">
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body>
+    <div id="app">
+      <header>
+        <h1><span class="icon">🔧</span> AgentSmith Ops Hub</h1>
+      </header>
+      <main>
+        <div class="panel project-panel">
+          <label for="project-source">🗂️ Project Source</label>
+          <div class="input-group">
+            <input
+              type="text"
+              id="project-source"
+              placeholder="Enter GitHub repo URL or local path..."
+              value="github.com/example/web-app"
+            />
+            <button id="start-btn" type="button">▶️ Start</button>
+          </div>
+        </div>
+        <div class="panel temp-location-panel">
+          <label>📁 Temp Copy Location</label>
+          <span id="temp-location">Waiting for process to start...</span>
+        </div>
+        <div class="panel terminal-panel">
+          <div class="terminal-header">
+            <h3>🧠 AgentSmith Terminal</h3>
+            <div class="terminal-dots">
+              <span class="dot red"></span>
+              <span class="dot yellow"></span>
+              <span class="dot green"></span>
+            </div>
+          </div>
+          <div id="terminal" aria-live="polite" role="log"></div>
+          <div id="controls" class="controls">
+            <button id="pause-btn" type="button" disabled>⏸️ Pause</button>
+            <button id="stop-btn" type="button" disabled>⏹️ Stop</button>
+            <button id="cancel-btn" type="button" disabled>❌ Cancel</button>
+          </div>
+        </div>
+      </main>
+      <footer>
+        <div class="agent-status-bar">
+          <div id="agent-smith" class="agent">
+            <span class="status-dot idle" aria-label="Idle"></span>
+            <span class="agent-name">🧠 AgentSmith</span>
+          </div>
+          <div id="agent-a" class="agent">
+            <span class="status-dot idle" aria-label="Idle"></span>
+            <span class="agent-name">🛠️ Agent A (Fixer)</span>
+          </div>
+          <div id="agent-b" class="agent">
+            <span class="status-dot idle" aria-label="Idle"></span>
+            <span class="agent-name">🕵️ Agent B (Debugger)</span>
+          </div>
+          <div id="agent-c" class="agent">
+            <span class="status-dot idle" aria-label="Idle"></span>
+            <span class="agent-name">🚀 Agent C (Optimizer)</span>
+          </div>
+        </div>
+      </footer>
+    </div>
+    <script type="module" src="index.tsx"></script>
+  <script type="module" src="/index.tsx"></script>
+</body>
 </html>
