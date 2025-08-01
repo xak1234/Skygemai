@@ -127,6 +127,7 @@
             display: flex;
             gap: 0.135rem; /* Increased by 35% from 0.1rem */
             margin-top: 0.135rem; /* Increased by 35% from 0.1rem */
+            flex-wrap: wrap;
         }
 
         input[type="text"], textarea, select {
@@ -168,6 +169,8 @@
             transition: all 0.3s ease;
             white-space: nowrap;
             font-size: 0.338rem; /* Increased by 35% from 0.25rem */
+            flex: 1;
+            min-width: 80px;
         }
 
         button:hover:not(:disabled) {
@@ -758,66 +761,48 @@
             <div class="agent-status-bar">
                 <div id="agent-smith" class="agent">
                     <span class="status-dot idle" id="smith-status" aria-label="Idle"></span>
-                    <div>
-                        <div class="agent-name">🧠 AgentSmith (Director)</div>
-                        <div class="agent-task" id="smith-task">Waiting for instructions...</div>
-                    </div>
+                    <div class="agent-name">🧠 AgentSmith</div>
+                    <div class="agent-task" id="smith-task">Waiting for instructions...</div>
                 </div>
                 <div id="agent-analyst" class="agent">
                     <span class="status-dot idle" id="analyst-status" aria-label="Idle"></span>
-                    <div>
-                        <div class="agent-name">📊 CodeAnalyst</div>
-                        <div class="agent-task" id="analyst-task">Ready for analysis</div>
-                    </div>
+                    <div class="agent-name">📊 CodeAnalyst</div>
+                    <div class="agent-task" id="analyst-task">Ready for analysis</div>
                 </div>
                 <div id="agent-architect" class="agent">
                     <span class="status-dot idle" id="architect-status" aria-label="Idle"></span>
-                    <div>
-                        <div class="agent-name">🏗️ SystemArchitect</div>
-                        <div class="agent-task" id="architect-task">Ready for design</div>
-                    </div>
+                    <div class="agent-name">🏗️ SystemArchitect</div>
+                    <div class="agent-task" id="architect-task">Ready for design</div>
                 </div>
                 <div id="agent-fixer" class="agent">
                     <span class="status-dot idle" id="fixer-status" aria-label="Idle"></span>
-                    <div>
-                        <div class="agent-name">🛠️ Fixer</div>
-                        <div class="agent-task" id="fixer-task">Ready to fix code</div>
-                    </div>
+                    <div class="agent-name">🛠️ Fixer</div>
+                    <div class="agent-task" id="fixer-task">Ready to fix code</div>
                 </div>
                 <div id="agent-debugger" class="agent">
                     <span class="status-dot idle" id="debugger-status" aria-label="Idle"></span>
-                    <div>
-                        <div class="agent-name">🕵️ Debugger</div>
-                        <div class="agent-task" id="debugger-task">Ready to debug</div>
-                    </div>
+                    <div class="agent-name">🕵️ Debugger</div>
+                    <div class="agent-task" id="debugger-task">Ready to debug</div>
                 </div>
                 <div id="agent-optimizer" class="agent">
                     <span class="status-dot idle" id="optimizer-status" aria-label="Idle"></span>
-                    <div>
-                        <div class="agent-name">🚀 Optimizer</div>
-                        <div class="agent-task" id="optimizer-task">Ready to optimize</div>
-                    </div>
+                    <div class="agent-name">🚀 Optimizer</div>
+                    <div class="agent-task" id="optimizer-task">Ready to optimize</div>
                 </div>
                 <div id="agent-codemaniac" class="agent">
                     <span class="status-dot idle" id="codemaniac-status" aria-label="Idle"></span>
-                    <div>
-                        <div class="agent-name">🤖 CodeManiac</div>
-                        <div class="agent-task" id="codemaniac-task">Ready to code</div>
-                    </div>
+                    <div class="agent-name">🤖 CodeManiac</div>
+                    <div class="agent-task" id="codemaniac-task">Ready to code</div>
                 </div>
                 <div id="agent-researcher" class="agent">
                     <span class="status-dot idle" id="researcher-status" aria-label="Idle"></span>
-                    <div>
-                        <div class="agent-name">🔬 Researcher</div>
-                        <div class="agent-task" id="researcher-task">Ready to research</div>
-                    </div>
+                    <div class="agent-name">🔬 Researcher</div>
+                    <div class="agent-task" id="researcher-task">Ready to research</div>
                 </div>
                 <div id="agent-tester" class="agent">
                     <span class="status-dot idle" id="tester-status" aria-label="Idle"></span>
-                    <div>
-                        <div class="agent-name">🧪 Tester</div>
-                        <div class="agent-task" id="tester-task">Ready to test</div>
-                    </div>
+                    <div class="agent-name">🧪 Tester</div>
+                    <div class="agent-task" id="tester-task">Ready to test</div>
                 </div>
             </div>
         </footer>
