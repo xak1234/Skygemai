@@ -1,11 +1,14 @@
-import { initializeApp, FirebaseApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAuth, Auth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getFirestore, Firestore, doc, setDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+// **FIXED**: Imports now use the local 'firebase' package
+// This resolves the Content-Security-Policy errors.
+import { initializeApp, FirebaseApp } from "firebase/app";
+import { getAuth, Auth, signInAnonymously, onAuthStateChanged } from "firebase/auth";
+import { getFirestore, Firestore, doc, setDoc, collection, getDocs } from "firebase/firestore";
 
+// This import is for your local CSS, it's correct.
 import './index.css';
 
 // =================================================================================
-// TYPE DEFINITIONS
+// TYPE DEFINITIONS (Unchanged)
 // =================================================================================
 
 type AgentStatus = 'idle' | 'working' | 'error';
@@ -41,7 +44,7 @@ interface ClonedProject {
 }
 
 // =================================================================================
-// MAIN ORCHESTRATION CLASS
+// MAIN ORCHESTRATION CLASS (The rest of the logic is unchanged)
 // =================================================================================
 
 class AgentSmithOpsHub {
@@ -75,8 +78,6 @@ class AgentSmithOpsHub {
 
   constructor() {
     this.bindUIElements();
-    // This is the critical change: We call the async init function
-    // and let it handle enabling the UI when it's ready.
     this.initializeFirebaseAndApp();
     this.bindEvents();
     this.resetState();
@@ -104,10 +105,6 @@ class AgentSmithOpsHub {
     };
   }
 
-  /**
-   * **FIXED**: This function now properly initializes Firebase and waits for
-   * authentication before enabling the application's core functionality.
-   */
   private async initializeFirebaseAndApp() {
     this.logToTerminal('System', 'Initializing Polymath Coder Engine...');
     try {
@@ -125,17 +122,15 @@ class AgentSmithOpsHub {
       this.db = getFirestore(app);
       this.auth = getAuth(app);
 
-      // Use a promise to wait for the first auth state change
       await new Promise<void>((resolve, reject) => {
         const unsubscribe = onAuthStateChanged(this.auth!, async (user) => {
-          unsubscribe(); // We only need the initial state
+          unsubscribe();
           if (user) {
             this.userId = user.uid;
             this.logToTerminal('System', `Authenticated with Firebase. User ID: ${this.userId}`);
             await this.loadLearnings();
             resolve();
           } else {
-            // If no user, sign in anonymously and wait for that to complete
             signInAnonymously(this.auth!).then(userCredential => {
                 this.userId = userCredential.user.uid;
                 this.logToTerminal('System', `Signed in anonymously. User ID: ${this.userId}`);
@@ -146,15 +141,13 @@ class AgentSmithOpsHub {
       });
 
       this.logToTerminal('System', '✅ Engine Ready. Provide a Git URL and a goal.');
-      this.startBtn.disabled = false; // Enable start button only after successful initialization
+      this.startBtn.disabled = false;
 
     } catch (error) {
       this.logToTerminal('System Error', `Critical initialization failed: ${(error as Error).message}`);
       this.logToTerminal('System', 'Please check backend logs and refresh the page.');
     }
   }
-  
-  // ... The rest of the file (getSmithsPlan, delegateToWorker, mainLoop, etc.) is unchanged ...
   
   private createAgent(elementId: string, name: string, role: AgentRole): Agent {
     const element = document.getElementById(elementId)!;
