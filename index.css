@@ -282,6 +282,7 @@ input[type="text"]::placeholder {
 }
 
 #terminal .log-smith { color: var(--accent-blue); }
+#terminal .log-smith-user { color: var(--accent-green); }
 #terminal .log-worker { color: var(--accent-green); }
 #terminal .log-error { color: var(--accent-red); }
 #terminal .log-system { color: var(--accent-yellow); }
@@ -367,6 +368,7 @@ footer {
 
 .status-dot.idle { background-color: var(--accent-green); }
 .status-dot.working { background-color: var(--accent-blue); }
+.status-dot.working-worker { background-color: var(--accent-red); }
 .status-dot.error { background-color: var(--accent-red); }
 
 .agent-name {

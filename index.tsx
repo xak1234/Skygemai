@@ -111,14 +111,34 @@ class AgentSmithOpsHub {
     const agent = this.agents[agentId];
     if (agent) {
       agent.status = status;
-      agent.statusDot.className = `status-dot ${status}`;
+      // Use red for working agent workers, blue for AgentSmith
+      if (status === 'working' && agentId !== 'smith') {
+        agent.statusDot.className = `status-dot working-worker`;
+      } else {
+        agent.statusDot.className = `status-dot ${status}`;
+      }
       agent.statusDot.setAttribute('aria-label', status);
     }
   }
 
   private logToTerminal(sender: string, message: string) {
     let type = 'system';
-    if (sender.includes('AgentSmith')) type = 'smith';
+    if (sender.includes('AgentSmith')) {
+      // Check if AgentSmith is speaking to the user (requester)
+      const isSpeakingToUser = message.toLowerCase().includes('user') || 
+                               message.toLowerCase().includes('requester') ||
+                               message.toLowerCase().includes('instruction') ||
+                               message.toLowerCase().includes('assign') ||
+                               message.toLowerCase().includes('planning') ||
+                               message.toLowerCase().includes('starting iteration') ||
+                               message.toLowerCase().includes('recent activity') ||
+                               message.toLowerCase().includes('detected repetitive') ||
+                               message.toLowerCase().includes('forcing') ||
+                               message.toLowerCase().includes('defaulting to') ||
+                               message.toLowerCase().includes('assigning task to') ||
+                               message.toLowerCase().includes('no specific assignment');
+      type = isSpeakingToUser ? 'smith-user' : 'smith';
+    }
     else if (sender.startsWith('Agent')) type = 'worker';
     else if (sender.toLowerCase().includes('error')) type = 'error';
 
