@@ -517,13 +517,13 @@
 
         .agent-status-bar {
             display: grid !important;
-            grid-template-columns: repeat(4, 1fr) !important;
-            grid-template-rows: repeat(3, 1fr) !important;
-            gap: 0.4rem;
+            grid-template-columns: repeat(3, 1fr) !important;
+            grid-template-rows: 1fr !important;
+            gap: 0.8rem;
             max-width: 100%;
             margin: 0 auto;
-            padding: 0.6rem;
-            min-height: 240px;
+            padding: 1rem;
+            min-height: 120px;
             background: var(--secondary-bg);
             border-radius: 8px;
             border: 1px solid var(--border-color);
@@ -708,9 +708,9 @@
 
             .agent-status-bar {
                 grid-template-columns: repeat(3, 1fr) !important;
-                grid-template-rows: repeat(3, 1fr) !important;
-                min-height: 200px;
-                gap: 0.3rem;
+                grid-template-rows: 1fr !important;
+                min-height: 100px;
+                gap: 0.5rem;
             }
 
             .agent {
@@ -748,11 +748,11 @@
             }
 
             .agent-status-bar {
-                grid-template-columns: repeat(2, 1fr) !important;
-                grid-template-rows: repeat(5, 1fr) !important;
-                gap: 0.3rem;
-                padding: 0.4rem;
-                min-height: 350px;
+                grid-template-columns: repeat(3, 1fr) !important;
+                grid-template-rows: 1fr !important;
+                gap: 0.4rem;
+                padding: 0.6rem;
+                min-height: 80px;
             }
 
             .agent {
@@ -934,45 +934,15 @@
                     <div class="agent-name">🧠 AgentSmith</div>
                     <div class="agent-task" id="smith-task">Waiting for instructions...</div>
                 </div>
-                <div id="agent-analyst" class="agent">
-                    <span class="status-dot idle" id="analyst-status" aria-label="Idle"></span>
-                    <div class="agent-name">📊 CodeAnalyst</div>
-                    <div class="agent-task" id="analyst-task">Ready for analysis</div>
+                <div id="agent-codemaster" class="agent">
+                    <span class="status-dot idle" id="codemaster-status" aria-label="Idle"></span>
+                    <div class="agent-name">⚡ CodeMaster</div>
+                    <div class="agent-task" id="codemaster-task">Ready for rapid coding</div>
                 </div>
-                <div id="agent-architect" class="agent">
-                    <span class="status-dot idle" id="architect-status" aria-label="Idle"></span>
-                    <div class="agent-name">🏗️ SystemArchitect</div>
-                    <div class="agent-task" id="architect-task">Ready for design</div>
-                </div>
-                <div id="agent-fixer" class="agent">
-                    <span class="status-dot idle" id="fixer-status" aria-label="Idle"></span>
-                    <div class="agent-name">🛠️ Fixer</div>
-                    <div class="agent-task" id="fixer-task">Ready to fix code</div>
-                </div>
-                <div id="agent-debugger" class="agent">
-                    <span class="status-dot idle" id="debugger-status" aria-label="Idle"></span>
-                    <div class="agent-name">🕵️ Debugger</div>
-                    <div class="agent-task" id="debugger-task">Ready to debug</div>
-                </div>
-                <div id="agent-optimizer" class="agent">
-                    <span class="status-dot idle" id="optimizer-status" aria-label="Idle"></span>
-                    <div class="agent-name">🚀 Optimizer</div>
-                    <div class="agent-task" id="optimizer-task">Ready to optimize</div>
-                </div>
-                <div id="agent-codemaniac" class="agent">
-                    <span class="status-dot idle" id="codemaniac-status" aria-label="Idle"></span>
-                    <div class="agent-name">🤖 CodeManiac</div>
-                    <div class="agent-task" id="codemaniac-task">Ready to code</div>
-                </div>
-                <div id="agent-researcher" class="agent">
-                    <span class="status-dot idle" id="researcher-status" aria-label="Idle"></span>
-                    <div class="agent-name">🔬 Researcher</div>
-                    <div class="agent-task" id="researcher-task">Ready to research</div>
-                </div>
-                <div id="agent-tester" class="agent">
-                    <span class="status-dot idle" id="tester-status" aria-label="Idle"></span>
-                    <div class="agent-name">🧪 Tester</div>
-                    <div class="agent-task" id="tester-task">Ready to test</div>
+                <div id="agent-qualityguard" class="agent">
+                    <span class="status-dot idle" id="qualityguard-status" aria-label="Idle"></span>
+                    <div class="agent-name">🛡️ QualityGuard</div>
+                    <div class="agent-task" id="qualityguard-task">Ready for validation</div>
                 </div>
             </div>
         </footer>
