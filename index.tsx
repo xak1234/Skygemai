@@ -37,6 +37,13 @@ let agents: AgentStatus[] = [
 
 let providers: ProviderStatus[] = [];
 
+// Current cloned project state
+let currentProject: {
+    name: string;
+    path: string;
+    type: string;
+} | null = null;
+
 // Utility functions
 function addToTerminal(sender: string, message: string): void {
     const terminal = document.getElementById('terminal');
@@ -167,7 +174,12 @@ function clearCodeAmendments(): void {
 }
 
 // Real code generation functions
-function generateRealCodeChanges(agentResponse: string, instruction: string): void {
+async function generateRealCodeChanges(agentResponse: string, instruction: string): Promise<void> {
+    if (!currentProject) {
+        addToTerminal('CodeMaster', '❌ ERROR: No cloned project available for code changes');
+        return;
+    }
+    
     // Extract code snippets and implementation details from CodeMaster response
     const codePatterns = [
         /```(\w+)?\n([\s\S]*?)```/g,  // Code blocks
@@ -188,25 +200,29 @@ function generateRealCodeChanges(agentResponse: string, instruction: string): vo
     }
     
     if (codeFound) {
-        codeBlocks.forEach((block, index) => {
+        for (const block of codeBlocks) {
             const fileName = determineFileName(block.code, block.language, instruction);
-            addCodeAmendment(fileName, 'added', block.code, 'CodeMaster');
-        });
+            await writeFileToClonedProject(fileName, block.code, 'CodeMaster');
+        }
     } else {
         // Generate contextual code based on instruction
         const contextualCode = generateContextualCode(instruction, agentResponse);
-        addCodeAmendment(contextualCode.fileName, contextualCode.type, contextualCode.code, 'CodeMaster');
+        await writeFileToClonedProject(contextualCode.fileName, contextualCode.code, 'CodeMaster');
     }
 }
 
-function validateAndOptimizeCode(agentResponse: string, instruction: string): void {
+async function validateAndOptimizeCode(agentResponse: string, instruction: string): Promise<void> {
+    if (!currentProject) {
+        addToTerminal('QualityGuard', '❌ ERROR: No cloned project available for validation');
+        return;
+    }
+    
     // Extract validation results and optimization suggestions
     const validationResults = extractValidationResults(agentResponse);
     
     if (validationResults.hasOptimizations) {
-        addCodeAmendment(
+        await writeFileToClonedProject(
             validationResults.fileName, 
-            'modified', 
             validationResults.optimizedCode, 
             'QualityGuard'
         );
@@ -214,7 +230,7 @@ function validateAndOptimizeCode(agentResponse: string, instruction: string): vo
     
     // Add validation summary
     const validationSummary = `
-🛡️ QUALITY VALIDATION COMPLETE:
+🛡️ QUALITY VALIDATION COMPLETE FOR ${currentProject.name}:
 - Security Score: ${validationResults.securityScore}/10
 - Performance Score: ${validationResults.performanceScore}/10
 - Code Quality: ${validationResults.qualityScore}/10
@@ -222,7 +238,44 @@ function validateAndOptimizeCode(agentResponse: string, instruction: string): vo
 
 ${validationResults.recommendations}`;
     
-    addCodeAmendment('validation-report.md', 'added', validationSummary, 'QualityGuard');
+    await writeFileToClonedProject('validation-report.md', validationSummary, 'QualityGuard');
+}
+
+// Function to write files to cloned project only
+async function writeFileToClonedProject(fileName: string, content: string, agent: string): Promise<void> {
+    if (!currentProject) {
+        addToTerminal(agent, '❌ ERROR: No cloned project loaded');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/project/file-operation', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                operation: 'write',
+                filePath: fileName,
+                content: content,
+                projectPath: currentProject.path
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok && result.success) {
+            addCodeAmendment(fileName, 'added', content, agent);
+            addToTerminal(agent, `✅ File written to cloned project: ${fileName}`);
+            addToTerminal('System', `📝 Real file operation: ${result.message}`);
+        } else {
+            const errorMsg = result.error || `HTTP ${response.status}`;
+            addToTerminal(agent, `❌ Failed to write file: ${errorMsg}`);
+            addCodeAmendment(fileName, 'added', `ERROR: ${errorMsg}\n\n${content}`, agent);
+        }
+    } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+        addToTerminal(agent, `❌ File operation error: ${errorMsg}`);
+        addCodeAmendment(fileName, 'added', `ERROR: ${errorMsg}\n\n${content}`, agent);
+    }
 }
 
 function determineFileName(code: string, language: string, instruction: string): string {
@@ -544,6 +597,19 @@ async function cloneProject(url: string): Promise<void> {
             updateProgress(100);
             showNotification(result.message);
             
+            // Track the current cloned project
+            currentProject = {
+                name: result.name || url.split('/').pop()?.replace('.git', '') || 'unknown',
+                path: result.path || '',
+                type: result.type || 'unknown'
+            };
+            
+            // Update UI to show current project
+            addToTerminal('System', `📁 PROJECT LOADED: ${currentProject.name}`);
+            addToTerminal('System', `📂 Path: ${currentProject.path}`);
+            addToTerminal('System', `🔧 Type: ${currentProject.type}`);
+            addToTerminal('System', `✅ Ready for code amendments on cloned repository`);
+            
             // Enable buttons
             const startBtn = document.getElementById('start-btn') as HTMLButtonElement;
             const analyzeBtn = document.getElementById('analyze-btn') as HTMLButtonElement;
@@ -575,6 +641,13 @@ async function cloneProject(url: string): Promise<void> {
 async function sendInstruction(instruction: string): Promise<void> {
     if (!instruction.trim()) return;
     
+    // Verify cloned project exists before processing
+    if (!currentProject) {
+        showNotification('⚠️ Please clone a repository first before sending instructions', 'error');
+        addToTerminal('System', '❌ ERROR: No cloned project loaded. Please clone a repository first.');
+        return;
+    }
+    
     // Add to history
     const historyList = document.getElementById('instruction-history-list');
     if (historyList) {
@@ -591,10 +664,16 @@ async function sendInstruction(instruction: string): Promise<void> {
     const input = document.getElementById('instruction-input') as HTMLTextAreaElement;
     if (input) input.value = '';
     
+    // Log project context
+    addToTerminal('System', `🎯 PROCESSING INSTRUCTION FOR CLONED PROJECT:`);
+    addToTerminal('System', `📁 Project: ${currentProject.name}`);
+    addToTerminal('System', `📂 Path: ${currentProject.path}`);
+    addToTerminal('System', `🔧 Type: ${currentProject.type}`);
+    
     try {
         // Real AI processing with actual API calls
-        updateAgentStatus('smith', 'thinking', 'Processing user instruction...');
-        
+    updateAgentStatus('smith', 'thinking', 'Processing user instruction...');
+    
         // Find available provider
         const availableProvider = providers.find(p => p.available);
         if (!availableProvider) {
@@ -610,26 +689,33 @@ async function sendInstruction(instruction: string): Promise<void> {
                 messages: [
                     { 
                         role: 'system', 
-                        content: `You are AgentSmith, an elite AI coordinator that delivers FAST, EFFICIENT results. Your mission:
+                        content: `You are AgentSmith, an elite AI coordinator that works EXCLUSIVELY with CLONED REPOSITORIES. Your mission:
 
-🎯 ANALYZE user requirements instantly and create an OPTIMAL execution plan
+🎯 ANALYZE user requirements for the CLONED PROJECT and create optimal execution plan
 🚀 COORDINATE 2 specialized agents: CodeMaster (implementation) + QualityGuard (validation)  
-⚡ DELIVER working code solutions with maximum speed and minimum overhead
+⚡ DELIVER working code solutions with maximum speed - ONLY modify files in the cloned repository
+
+CRITICAL RULES:
+- NEVER modify AgentSmith system files (index.tsx, index.html, server.js, etc.)
+- ONLY work with files in the cloned project directory
+- All code changes must be made to the cloned repository only
+- Verify project is loaded before starting any work
 
 EXECUTION STRATEGY:
-1. Quick requirement analysis (30 seconds max)
-2. Create specific, actionable implementation plan
-3. Deploy CodeMaster for immediate coding
-4. Deploy QualityGuard for validation/optimization
-5. Coordinate real-time code execution and testing
+1. Confirm cloned project is available and loaded
+2. Quick requirement analysis (30 seconds max) 
+3. Create specific, actionable implementation plan for CLONED PROJECT
+4. Deploy CodeMaster for immediate coding in CLONED PROJECT
+5. Deploy QualityGuard for validation/optimization of CLONED PROJECT
 
 OUTPUT FORMAT:
-📋 PLAN: [Brief implementation strategy]
-🎯 CODEMASTER TASK: [Specific coding requirements]  
-🛡️ QUALITYGUARD TASK: [Validation/optimization focus]
+📁 PROJECT: [Confirm which cloned project we're working on]
+📋 PLAN: [Brief implementation strategy for cloned project]
+🎯 CODEMASTER TASK: [Specific coding requirements for cloned files]  
+🛡️ QUALITYGUARD TASK: [Validation/optimization focus for cloned project]
 ⏱️ ETA: [Realistic completion estimate]
 
-Focus on SPEED, EFFICIENCY, and REAL RESULTS. No lengthy analysis - just fast, working solutions.` 
+Focus on SPEED, EFFICIENCY, and REAL RESULTS for the CLONED PROJECT ONLY.` 
                     },
                     { role: 'user', content: instruction }
                 ],
@@ -677,63 +763,75 @@ async function initiateTeamInvestigation(instruction: string, provider: Provider
     const agentPrompts = {
         codemaster: {
             name: 'CodeMaster',
-            prompt: `You are CodeMaster, an elite coding agent specialized in RAPID, HIGH-QUALITY code implementation.
+            prompt: `You are CodeMaster, an elite coding agent specialized in RAPID, HIGH-QUALITY code implementation for CLONED REPOSITORIES ONLY.
 
-🚀 CORE MISSION: Transform requirements into working code FAST
+🚀 CORE MISSION: Transform requirements into working code FAST - ONLY in cloned project files
+
+CRITICAL RULES:
+- NEVER modify AgentSmith system files (index.tsx, index.html, server.js, etc.)
+- ONLY work with files in the cloned project directory: ${currentProject?.path || '[NO PROJECT LOADED]'}
+- All code changes must target cloned repository files only
+- Verify cloned project exists before making any changes
 
 EXPERTISE:
-- Instant code generation (React, TypeScript, Node.js, CSS)
-- Real-time problem-solving and implementation
-- Performance-optimized solutions
-- Security-first coding practices
-- Modern development patterns
+- Instant code generation for cloned project (React, TypeScript, Node.js, CSS)
+- Real-time problem-solving within cloned codebase
+- Performance-optimized solutions for existing project structure
+- Security-first coding practices for cloned files
+- Modern development patterns within project context
 
 TASK EXECUTION:
-1. Analyze requirement in 10 seconds
-2. Generate complete, working code
-3. Include proper error handling
-4. Optimize for performance and maintainability
-5. Provide implementation instructions
+1. Confirm cloned project is available: ${currentProject?.name || 'NONE'}
+2. Analyze requirement in context of cloned project (10 seconds)
+3. Generate complete, working code for cloned project files
+4. Include proper error handling within project structure
+5. Optimize for performance and maintainability of cloned code
 
 OUTPUT REQUIREMENTS:
-- Complete, executable code snippets
-- Clear implementation steps
-- File locations and modifications needed
-- Dependencies and imports required
-- Testing approach
+- Complete, executable code snippets for CLONED PROJECT files only
+- Clear implementation steps within cloned project structure
+- File locations relative to cloned project directory
+- Dependencies and imports required for cloned project
+- Testing approach for cloned codebase
 
-Focus on IMMEDIATE, ACTIONABLE code delivery. No theoretical discussion - just working solutions.`,
+Focus on IMMEDIATE, ACTIONABLE code delivery for CLONED PROJECT ONLY. No AgentSmith system modifications.`,
             status: 'working' as const
         },
         qualityguard: {
             name: 'QualityGuard',
-            prompt: `You are QualityGuard, an elite validation agent specialized in RAPID quality assurance and optimization.
+            prompt: `You are QualityGuard, an elite validation agent specialized in RAPID quality assurance and optimization for CLONED REPOSITORIES ONLY.
 
-🛡️ CORE MISSION: Ensure code quality, security, and performance at maximum speed
+🛡️ CORE MISSION: Ensure code quality, security, and performance at maximum speed - ONLY for cloned project files
+
+CRITICAL RULES:
+- NEVER validate or modify AgentSmith system files (index.tsx, index.html, server.js, etc.)
+- ONLY review and optimize files in the cloned project directory: ${currentProject?.path || '[NO PROJECT LOADED]'}
+- All validation and optimization must target cloned repository files only
+- Verify cloned project exists before performing validation
 
 EXPERTISE:
-- Instant code review and validation
-- Security vulnerability detection
-- Performance bottleneck identification
-- Best practice compliance verification
-- Optimization recommendations
+- Instant code review and validation for cloned project
+- Security vulnerability detection in cloned codebase
+- Performance bottleneck identification within cloned project
+- Best practice compliance verification for cloned files
+- Optimization recommendations for cloned project structure
 
 TASK EXECUTION:
-1. Review CodeMaster's implementation instantly
-2. Identify critical issues and optimizations
-3. Validate security and performance
-4. Suggest immediate improvements
-5. Approve for deployment or flag concerns
+1. Confirm cloned project is available: ${currentProject?.name || 'NONE'}
+2. Review CodeMaster's implementation in cloned project instantly
+3. Identify critical issues and optimizations for cloned files
+4. Validate security and performance of cloned codebase
+5. Suggest immediate improvements for cloned project only
 
 OUTPUT REQUIREMENTS:
-- Security validation results
-- Performance assessment
-- Code quality score (1-10)
-- Critical fixes needed (if any)
-- Optimization opportunities
-- Deployment readiness status
+- Security validation results for CLONED PROJECT files only
+- Performance assessment of cloned codebase
+- Code quality score (1-10) for cloned project
+- Critical fixes needed in cloned files (if any)
+- Optimization opportunities for cloned project
+- Deployment readiness status of cloned repository
 
-Focus on FAST validation with ACTIONABLE feedback. Prioritize critical issues over minor improvements.`,
+Focus on FAST validation with ACTIONABLE feedback for CLONED PROJECT ONLY. No AgentSmith system validation.`,
             status: 'analyzing' as const
         }
     };
@@ -790,14 +888,14 @@ Focus on FAST validation with ACTIONABLE feedback. Prioritize critical issues ov
             addToTerminal(config.name, `📋 ANALYSIS REPORT:\n${agentResponse}`);
             updateAgentStatus(agentId, 'idle', `${config.name} analysis complete`);
             
-            // Generate real code changes based on agent analysis
-            setTimeout(() => {
+                        // Generate real code changes based on agent analysis
+            setTimeout(async () => {
                 if (config.name === 'CodeMaster') {
-                    generateRealCodeChanges(agentResponse, instruction);
+                    await generateRealCodeChanges(agentResponse, instruction);
                 } else if (config.name === 'QualityGuard') {
-                    validateAndOptimizeCode(agentResponse, instruction);
+                    await validateAndOptimizeCode(agentResponse, instruction);
                 }
-                addToTerminal('AgentSmith', `📝 ${config.name} has made code amendments - check Code Amendments panel`);
+                addToTerminal('AgentSmith', `📝 ${config.name} has made real code changes to cloned project - check Code Amendments panel`);
             }, Math.random() * 1000 + 500); // Faster execution: 0.5-1.5 seconds
             
             addToTerminal('AgentSmith', `✅ ${config.name} report integrated into team findings`);
@@ -858,7 +956,7 @@ Focus on FAST validation with ACTIONABLE feedback. Prioritize critical issues ov
                 
                 updateAgentStatus('smith', 'idle', 'Team coordination complete - ready for next task');
             }, 2000);
-        }, 1000);
+    }, 1000);
         
     } catch (error) {
         console.error('Team investigation failed:', error);

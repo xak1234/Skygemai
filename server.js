@@ -492,6 +492,114 @@ app.get('*', (req, res) => {
 });
 
 // --- Error Handling Middleware ---
+// 7. File Operations Endpoint (for cloned repositories only)
+app.post('/api/project/file-operation', async (req, res) => {
+    logger.info('HIT: /api/project/file-operation');
+    
+    try {
+        const { operation, filePath, content, projectPath } = req.body;
+        
+        if (!operation || !filePath || !projectPath) {
+            return res.status(400).json({ error: 'Operation, filePath, and projectPath are required' });
+        }
+        
+        // Ensure we're only working within the projects directory
+        const projectsDir = path.join(__dirname, 'projects');
+        const absoluteProjectPath = path.resolve(projectPath);
+        const absoluteProjectsDir = path.resolve(projectsDir);
+        
+        if (!absoluteProjectPath.startsWith(absoluteProjectsDir)) {
+            return res.status(403).json({ error: 'Access denied: Can only modify files in cloned projects' });
+        }
+        
+        const fullFilePath = path.join(absoluteProjectPath, filePath);
+        
+        // Ensure the file path is within the project directory
+        if (!fullFilePath.startsWith(absoluteProjectPath)) {
+            return res.status(403).json({ error: 'Access denied: File path must be within project directory' });
+        }
+        
+        switch (operation) {
+            case 'write':
+                if (!content) {
+                    return res.status(400).json({ error: 'Content is required for write operation' });
+                }
+                
+                // Ensure directory exists
+                await fs.ensureDir(path.dirname(fullFilePath));
+                
+                // Write the file
+                await fs.writeFile(fullFilePath, content, 'utf8');
+                logger.info(`File written: ${fullFilePath}`);
+                
+                res.json({ 
+                    success: true, 
+                    message: `File ${filePath} written successfully`,
+                    operation: 'write',
+                    filePath: filePath
+                });
+                break;
+                
+            case 'read':
+                if (!await fs.pathExists(fullFilePath)) {
+                    return res.status(404).json({ error: 'File not found' });
+                }
+                
+                const fileContent = await fs.readFile(fullFilePath, 'utf8');
+                res.json({ 
+                    success: true, 
+                    content: fileContent,
+                    operation: 'read',
+                    filePath: filePath
+                });
+                break;
+                
+            case 'append':
+                if (!content) {
+                    return res.status(400).json({ error: 'Content is required for append operation' });
+                }
+                
+                await fs.appendFile(fullFilePath, content, 'utf8');
+                logger.info(`Content appended to: ${fullFilePath}`);
+                
+                res.json({ 
+                    success: true, 
+                    message: `Content appended to ${filePath} successfully`,
+                    operation: 'append',
+                    filePath: filePath
+                });
+                break;
+                
+            case 'delete':
+                if (!await fs.pathExists(fullFilePath)) {
+                    return res.status(404).json({ error: 'File not found' });
+                }
+                
+                await fs.remove(fullFilePath);
+                logger.info(`File deleted: ${fullFilePath}`);
+                
+                res.json({ 
+                    success: true, 
+                    message: `File ${filePath} deleted successfully`,
+                    operation: 'delete',
+                    filePath: filePath
+                });
+                break;
+                
+            default:
+                return res.status(400).json({ error: 'Invalid operation. Supported: write, read, append, delete' });
+        }
+        
+    } catch (error) {
+        logger.error(`File operation error: ${error.message}`);
+        res.status(500).json({ 
+            error: 'Internal server error during file operation',
+            details: error.message 
+        });
+    }
+});
+
+// --- Error Handler ---
 app.use((err, req, res, next) => {
     if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
         logger.error('JSON Parse Error:', err.message);
