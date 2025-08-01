@@ -4,7 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import https from 'https';
 import http from 'http';
-import OpenAI from 'openai';
+import OpenAI from 'openai';helmet
 import helmet from 'helmet';
 import winston from 'winston';
 import { z } from 'zod';
@@ -202,22 +202,19 @@ async function executeTask(agent, reqBody, validatedBody) {
 }
 
 // Middleware
-app.use(helmet({
-  contentSecurityPolicy: {
+const helmet = require('helmet');
+
+app.use(
+  helmet.contentSecurityPolicy({
     directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      imgSrc: ["'self'", "data:", "https://fonts.gstatic.com"],
-      scriptSrc: ["'self'"],
-      connectSrc: ["'self'"],
-      frameSrc: ["'self'"],
-      objectSrc: ["'none'"],
-      mediaSrc: ["'self'"],
-      manifestSrc: ["'self'"]
-    }
-  }
-}));
+      ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+      "script-src": ["'self'", "https://www.gstatic.com"],
+      // You might also need to allow connections for Firebase services
+      "connect-src": ["'self'", "https://*.firebaseio.com", "wss://*.firebaseio.com"],
+    },
+  })
+);
+
 app.use(cors({
   origin: ['https://skygemaix.onrender.com'],
   credentials: true,
