@@ -73,13 +73,24 @@ async function checkAgentHealth(agent) {
     const url = new URL(agent.url);
     const client = url.protocol === 'https:' ? https : http;
     await new Promise((resolve) => {
-      client.get(`${agent.url}/health`, { timeout: 5000 }, (res) => {
-        agent.health = res.statusCode === 200;
-        resolve();
-      }).on('error', () => {
+      const req = client.request(
+        {
+          method: 'HEAD',
+          hostname: url.hostname,
+          port: url.port || (url.protocol === 'https:' ? 443 : 80),
+          path: url.pathname,
+          timeout: 5000
+        },
+        (res) => {
+          agent.health = res.statusCode < 500;
+          resolve();
+        }
+      );
+      req.on('error', () => {
         agent.health = false;
         resolve();
       });
+      req.end();
     });
   } catch {
     agent.health = false;
@@ -154,7 +165,7 @@ async function executeTask(agent, reqBody, validatedBody) {
     } else if (agent.type === 'deepseek' && process.env.DEEPSEEK_API_KEY) {
       return new Promise((resolve, reject) => {
         const url = new URL(agent.url);
-        const cleanPath = (url.pathname + '/chat/completions').replace(/\/+/g, '/');
+        const cleanPath = new URL('/chat/completions', agent.url).pathname;
         const headers = {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`,
@@ -163,7 +174,7 @@ async function executeTask(agent, reqBody, validatedBody) {
 
         const options = {
           hostname: url.hostname,
-          port: 443,
+          port: url.port || 443,
           path: cleanPath,
           method: 'POST',
           headers,
