@@ -238,7 +238,89 @@ app.use((req, res, next) => {
   next();
 });
 
-// Unified API Endpoint
+// XAI API Endpoint
+app.post('/api/xai/v1/chat/completions', async (req, res, next) => {
+  try {
+    const analysis = analyzeRequest(req.body);
+    if (!analysis.isValid) {
+      throw analysis.error;
+    }
+
+    logger.info('XAI request analysis', {
+      complexity: analysis.complexity,
+      requiresDeepseek: analysis.requiresDeepseek
+    });
+
+    // For XAI endpoint, prioritize XAI agents
+    const xaiAgents = agents.filter(agent => agent.type === 'xai' && agent.health && agent.client);
+    if (!xaiAgents.length) {
+      throw new Error('No healthy XAI agents available');
+    }
+
+    const selectedAgent = xaiAgents[0]; // Use first available XAI agent
+    logger.info('Selected XAI agent', { agent: selectedAgent.name });
+
+    const result = await executeTask(selectedAgent, req.body, analysis.validated);
+    
+    if (!result.success) {
+      throw new Error(`XAI agent failed: ${result.error}`);
+    }
+
+    logger.info('XAI task result', {
+      agent: result.agent,
+      success: result.success,
+      choices: result.result?.choices?.length
+    });
+
+    // Return the result in OpenAI-compatible format
+    res.json(result.result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// DeepSeek API Endpoint
+app.post('/api/deepseek/chat/completions', async (req, res, next) => {
+  try {
+    const analysis = analyzeRequest(req.body);
+    if (!analysis.isValid) {
+      throw analysis.error;
+    }
+
+    logger.info('DeepSeek request analysis', {
+      complexity: analysis.complexity,
+      requiresDeepseek: analysis.requiresDeepseek
+    });
+
+    // For DeepSeek endpoint, use DeepSeek agent if available
+    const deepseekAgents = agents.filter(agent => agent.type === 'deepseek' && agent.health);
+    if (!deepseekAgents.length) {
+      throw new Error('No healthy DeepSeek agents available');
+    }
+
+    const selectedAgent = deepseekAgents[0]; // Use first available DeepSeek agent
+    logger.info('Selected DeepSeek agent', { agent: selectedAgent.name });
+
+    const result = await executeTask(selectedAgent, req.body, analysis.validated);
+    
+    if (!result.success) {
+      throw new Error(`DeepSeek agent failed: ${result.error}`);
+    }
+
+    logger.info('DeepSeek task result', {
+      agent: result.agent,
+      success: result.success,
+      choices: result.result?.choices?.length
+    });
+
+    // Return the result in OpenAI-compatible format
+    res.json(result.result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Unified API Endpoint (for backward compatibility)
 app.post('/api/chat/completions', async (req, res, next) => {
   try {
     const analysis = analyzeRequest(req.body);
@@ -246,7 +328,7 @@ app.post('/api/chat/completions', async (req, res, next) => {
       throw analysis.error;
     }
 
-    logger.info('Request analysis', {
+    logger.info('Unified request analysis', {
       complexity: analysis.complexity,
       requiresDeepseek: analysis.requiresDeepseek
     });
@@ -265,7 +347,7 @@ app.post('/api/chat/completions', async (req, res, next) => {
       throw new Error('All agents failed to process the request');
     }
 
-    logger.info('Task results', {
+    logger.info('Unified task results', {
       results: results.map(r => ({
         agent: r.agent,
         success: r.success,
