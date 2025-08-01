@@ -460,77 +460,97 @@ REPORT FORMAT: Provide specific findings with file paths, line numbers, and acti
         // Add a small delay between iterations to prevent overwhelming the API
         await new Promise(resolve => setTimeout(resolve, 1000));
 
-        let workerId: keyof typeof this.agents | null = null;
         const plan = smithsPlan.toLowerCase();
-        
+
         // Enhanced worker assignment logic with better diversity
         const recentWorkerUsage = this.history.slice(-3).map(h => h.role).join(' ').toLowerCase();
-        
-        if (plan.includes('assign debugger') || plan.includes('debug') || plan.includes('scan') || plan.includes('find bug') || plan.includes('security') || plan.includes('vulnerability') || plan.includes('quality') || plan.includes('audit')) {
-          // Only assign Debugger if we haven't used it recently and it's not overused
+        const workerIds: (keyof typeof this.agents)[] = [];
+
+        const addWorker = (id: keyof typeof this.agents, message: string) => {
+          if (!workerIds.includes(id)) {
+            workerIds.push(id);
+            this.logToTerminal('AgentSmith', message);
+          }
+        };
+
+        if (
+          plan.includes('assign debugger') || plan.includes('debug') || plan.includes('scan') ||
+          plan.includes('find bug') || plan.includes('security') || plan.includes('vulnerability') ||
+          plan.includes('quality') || plan.includes('audit')
+        ) {
           if (debuggerCount < 2 && !recentWorkerUsage.includes('debugger')) {
-            workerId = 'b';
-            this.logToTerminal('AgentSmith', 'Assigning task to Debugger (Agent B)');
+            addWorker('b', 'Assigning task to Debugger (Agent B)');
           } else {
-            // Force assignment to a different agent
             if (optimizerCount === 0) {
-              workerId = 'c';
-              this.logToTerminal('AgentSmith', 'Debugger overused. Forcing Optimizer assignment.');
+              addWorker('c', 'Debugger overused. Forcing Optimizer assignment.');
             } else if (fixerCount === 0) {
-              workerId = 'a';
-              this.logToTerminal('AgentSmith', 'Debugger overused. Forcing Fixer assignment.');
+              addWorker('a', 'Debugger overused. Forcing Fixer assignment.');
             } else {
-              workerId = 'd';
-              this.logToTerminal('AgentSmith', 'Debugger overused. Forcing CodeManiac assignment.');
+              addWorker('d', 'Debugger overused. Forcing CodeManiac assignment.');
             }
           }
-        } else if (plan.includes('assign optimizer') || plan.includes('optimize') || plan.includes('refactor') || plan.includes('improve performance') || plan.includes('performance') || plan.includes('bottleneck') || plan.includes('memory') || plan.includes('database')) {
-            workerId = 'c';
-            this.logToTerminal('AgentSmith', 'Assigning task to Optimizer (Agent C)');
-        } else if (plan.includes('assign fixer') || plan.includes('fix') || plan.includes('patch') || plan.includes('implement') || plan.includes('apply') || plan.includes('correct') || plan.includes('update')) {
-            workerId = 'a';
-            this.logToTerminal('AgentSmith', 'Assigning task to Fixer (Agent A)');
-        } else if (plan.includes('assign codemaniac') || plan.includes('creative') || plan.includes('novel') || plan.includes('innovative') || plan.includes('experimental') || plan.includes('unconventional')) {
-            workerId = 'd';
-            this.logToTerminal('AgentSmith', 'Assigning task to CodeManiac (Agent D) for creative solutions');
-        } else {
-            // Smart fallback: choose the least recently used agent
-            const agentUsage = { debugger: debuggerCount, optimizer: optimizerCount, fixer: fixerCount, codemaniac: codeManiacCount };
-            const leastUsed = Object.entries(agentUsage).sort(([,a], [,b]) => a - b)[0][0];
-            
-            switch (leastUsed) {
-              case 'optimizer':
-                workerId = 'c';
-                this.logToTerminal('AgentSmith', 'No specific assignment. Defaulting to Optimizer (least used).');
-                break;
-              case 'fixer':
-                workerId = 'a';
-                this.logToTerminal('AgentSmith', 'No specific assignment. Defaulting to Fixer (least used).');
-                break;
-              case 'codemaniac':
-                workerId = 'd';
-                this.logToTerminal('AgentSmith', 'No specific assignment. Defaulting to CodeManiac (least used).');
-                break;
-              default:
-                workerId = 'c';
-                this.logToTerminal('AgentSmith', 'No specific assignment. Defaulting to Optimizer.');
-            }
         }
 
-        if (workerId) {
-            try {
-                const workerResult = await this.delegateToWorker(workerId, smithsPlan);
-                this.currentTask = `Worker ${this.agents[workerId].name} reported: ${workerResult}`;
-                this.history.push({ role: 'user', content: this.currentTask });
-            } catch (error) {
-                this.logToTerminal('System', `Worker ${this.agents[workerId].name} failed: ${(error as Error).message}`);
-                this.currentTask = `Worker failure, continuing with next task.`;
-                this.history.push({ role: 'user', content: this.currentTask });
-            }
+        if (
+          plan.includes('assign optimizer') || plan.includes('optimize') || plan.includes('refactor') ||
+          plan.includes('improve performance') || plan.includes('performance') || plan.includes('bottleneck') ||
+          plan.includes('memory') || plan.includes('database')
+        ) {
+          addWorker('c', 'Assigning task to Optimizer (Agent C)');
+        }
+
+        if (
+          plan.includes('assign fixer') || plan.includes('fix') || plan.includes('patch') ||
+          plan.includes('implement') || plan.includes('apply') || plan.includes('correct') ||
+          plan.includes('update')
+        ) {
+          addWorker('a', 'Assigning task to Fixer (Agent A)');
+        }
+
+        if (
+          plan.includes('assign codemaniac') || plan.includes('creative') || plan.includes('novel') ||
+          plan.includes('innovative') || plan.includes('experimental') || plan.includes('unconventional')
+        ) {
+          addWorker('d', 'Assigning task to CodeManiac (Agent D) for creative solutions');
+        }
+
+        if (workerIds.length === 0) {
+          // Smart fallback: choose the least recently used agent
+          const agentUsage = { debugger: debuggerCount, optimizer: optimizerCount, fixer: fixerCount, codemaniac: codeManiacCount };
+          const leastUsed = Object.entries(agentUsage).sort(([, a], [, b]) => a - b)[0][0];
+
+          switch (leastUsed) {
+            case 'optimizer':
+              addWorker('c', 'No specific assignment. Defaulting to Optimizer (least used).');
+              break;
+            case 'fixer':
+              addWorker('a', 'No specific assignment. Defaulting to Fixer (least used).');
+              break;
+            case 'codemaniac':
+              addWorker('d', 'No specific assignment. Defaulting to CodeManiac (least used).');
+              break;
+            default:
+              addWorker('c', 'No specific assignment. Defaulting to Optimizer.');
+          }
+        }
+
+        if (workerIds.length > 0) {
+          const results = await Promise.all(
+            workerIds.map(id =>
+              this.delegateToWorker(id, smithsPlan)
+                .then(res => ({ id, res }))
+                .catch(err => ({ id, res: `Worker failed: ${(err as Error).message}` }))
+            )
+          );
+
+          this.currentTask = results
+            .map(r => `Worker ${this.agents[r.id].name} reported: ${r.res}`)
+            .join(' ');
+          this.history.push({ role: 'user', content: this.currentTask });
         } else {
-            this.currentTask = `AgentSmith status update: ${smithsPlan}`;
-            this.history.push({ role: 'user', content: this.currentTask });
-            await new Promise(resolve => setTimeout(resolve, 500));
+          this.currentTask = `AgentSmith status update: ${smithsPlan}`;
+          this.history.push({ role: 'user', content: this.currentTask });
+          await new Promise(resolve => setTimeout(resolve, 500));
         }
       } catch (error) {
           this.logToTerminal('System Error', `A critical error occurred: ${(error as Error).message}`);
