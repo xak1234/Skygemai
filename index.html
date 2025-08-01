@@ -383,29 +383,31 @@
         }
 
         .agent-status-bar {
-            display: flex;
-            flex-direction: row;
-            gap: 0.5rem;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(4, 1fr);
+            gap: 0.3rem;
             max-width: 100%;
             margin: 0 auto;
-            overflow-x: auto;
             padding: 0.5rem;
-            flex-wrap: wrap;
-            justify-content: center;
+            min-height: 200px;
         }
 
         .agent {
             display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 0.3rem;
+            justify-content: center;
+            gap: 0.2rem;
             background: var(--accent-bg);
-            padding: 0.4rem 0.6rem;
+            padding: 0.3rem;
             border-radius: 4px;
             transition: all 0.3s ease;
             cursor: grab;
             border: 1px solid var(--border-color);
             user-select: none;
-            min-width: 120px;
+            min-height: 40px;
+            text-align: center;
         }
 
         .agent:active {
@@ -462,14 +464,20 @@
         }
 
         .agent-name {
-            font-size: 0.6rem;
+            font-size: 0.5rem;
             font-weight: 500;
+            line-height: 1.1;
         }
 
         .agent-task {
-            font-size: 0.5rem;
+            font-size: 0.4rem;
             color: var(--secondary-text);
             margin-top: 0.1rem;
+            line-height: 1.1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 100%;
         }
 
         .progress-bar {
@@ -552,7 +560,21 @@
             }
 
             .agent-status-bar {
-                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                grid-template-columns: repeat(3, 1fr);
+                grid-template-rows: repeat(3, 1fr);
+                min-height: 180px;
+            }
+
+            .agent {
+                min-height: 50px;
+            }
+
+            .agent-name {
+                font-size: 0.45rem;
+            }
+
+            .agent-task {
+                font-size: 0.38rem;
             }
         }
 
@@ -578,21 +600,24 @@
             }
 
             .agent-status-bar {
-                gap: 0.3rem;
+                grid-template-columns: repeat(2, 1fr);
+                grid-template-rows: repeat(8, 1fr);
+                gap: 0.2rem;
                 padding: 0.3rem;
+                min-height: 300px;
             }
 
             .agent {
-                min-width: 100px;
-                padding: 0.3rem 0.4rem;
+                min-height: 35px;
+                padding: 0.2rem;
             }
 
             .agent-name {
-                font-size: 0.5rem;
+                font-size: 0.4rem;
             }
 
             .agent-task {
-                font-size: 0.4rem;
+                font-size: 0.35rem;
             }
 
             #terminal {
