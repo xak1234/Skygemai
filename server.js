@@ -121,12 +121,10 @@ function analyzeRequest(reqBody) {
   try {
     const validated = schema.parse(reqBody);
     const totalLength = validated.messages.reduce((sum, msg) => sum + msg.content.length, 0);
-    const hasCode = validated.messages.some(msg => /[{};]|\b(function|class|import|const|let|var)\b/.test(msg.content));
     return {
       isValid: true,
-      complexity: hasCode || totalLength > 1000 ? 'high' : totalLength > 500 ? 'medium' : 'low',
+      complexity: totalLength > 1000 ? 'high' : totalLength > 500 ? 'medium' : 'low',
       requiresDeepseek: validated.messages.some(msg => msg.content.toLowerCase().includes('deepseek')),
-      hasCode,
       validated
     };
   } catch (error) {
@@ -141,24 +139,13 @@ function selectAgents(analysis) {
     throw new Error('No healthy agents available');
   }
 
-  const xaiAgents = availableAgents.filter(a => a.type === 'xai');
-  const deepseekAgents = availableAgents.filter(a => a.type === 'deepseek');
-
   if (analysis.complexity === 'high') {
     return availableAgents; // Use all agents for high complexity
+  } else if (analysis.requiresDeepseek && availableAgents.some(a => a.type === 'deepseek')) {
+    return availableAgents.filter(a => a.type === 'deepseek');
+  } else {
+    return availableAgents.filter(a => a.type === 'xai').slice(0, 1); // Default to one XAI agent
   }
-
-  if (analysis.requiresDeepseek && deepseekAgents.length) {
-    // Include at least one XAI agent alongside DeepSeek
-    return [...deepseekAgents, ...xaiAgents.slice(0, 1)];
-  }
-
-  if (analysis.complexity === 'medium' || analysis.hasCode) {
-    // Utilize multiple agents for medium complexity or when code is present
-    return [...xaiAgents.slice(0, 1), ...deepseekAgents.slice(0, 1)].filter(Boolean);
-  }
-
-  return xaiAgents.slice(0, 1); // Default to single XAI agent for simple requests
 }
 
 // Execute Task
