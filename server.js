@@ -69,17 +69,31 @@ const agents = [
 
 // Health Check for Agents
 async function checkAgentHealth(agent) {
+  // DeepSeek does not expose a health endpoint; treat it as healthy when an
+  // API key is present and skip probing.
+  if (agent.type === 'deepseek') {
+    agent.health = Boolean(process.env.DEEPSEEK_API_KEY);
+    logger.info('Agent health check', {
+      agent: agent.name,
+      health: agent.health,
+      skipped: true
+    });
+    return;
+  }
+
   try {
     const url = new URL(agent.url);
     const client = url.protocol === 'https:' ? https : http;
     await new Promise((resolve) => {
-      client.get(`${agent.url}/health`, { timeout: 5000 }, (res) => {
-        agent.health = res.statusCode === 200;
-        resolve();
-      }).on('error', () => {
-        agent.health = false;
-        resolve();
-      });
+      client
+        .get(`${agent.url}/health`, { timeout: 5000 }, (res) => {
+          agent.health = res.statusCode === 200;
+          resolve();
+        })
+        .on('error', () => {
+          agent.health = false;
+          resolve();
+        });
     });
   } catch {
     agent.health = false;
@@ -212,8 +226,8 @@ app.use((req, res, next) => {
   next();
 });
 
-// Unified API Endpoint
-app.post('/api/chat/completions', async (req, res, next) => {
+// Unified API Endpoint for X.AI-compatible requests
+app.post(['/api/chat/completions', '/api/xai/v1/chat/completions'], async (req, res, next) => {
   try {
     const analysis = analyzeRequest(req.body);
     if (!analysis.isValid) {
@@ -249,6 +263,30 @@ app.post('/api/chat/completions', async (req, res, next) => {
 
     // Return first successful result
     res.json({ status: 'success', data: successfulResults[0].result });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Dedicated DeepSeek Endpoint
+app.post('/api/deepseek/chat/completions', async (req, res, next) => {
+  try {
+    const analysis = analyzeRequest(req.body);
+    if (!analysis.isValid) {
+      throw analysis.error;
+    }
+
+    const deepseekAgent = agents.find(a => a.type === 'deepseek');
+    if (!deepseekAgent || !deepseekAgent.health) {
+      throw new Error('DeepSeek agent unavailable');
+    }
+
+    const result = await executeTask(deepseekAgent, req.body, analysis.validated);
+    if (!result.success) {
+      throw new Error(result.error || 'DeepSeek request failed');
+    }
+
+    res.json({ status: 'success', data: result.result });
   } catch (error) {
     next(error);
   }
