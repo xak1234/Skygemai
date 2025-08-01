@@ -63,6 +63,27 @@
             50% { transform: scale(1.1); }
         }
 
+        @keyframes flashRed {
+            0% { 
+                background: var(--error-color);
+                opacity: 1;
+                transform: scale(1);
+                box-shadow: 0 0 8px var(--error-color);
+            }
+            50% { 
+                background: #ff8888;
+                opacity: 0.7;
+                transform: scale(1.2);
+                box-shadow: 0 0 15px var(--error-color);
+            }
+            100% { 
+                background: var(--error-color);
+                opacity: 1;
+                transform: scale(1);
+                box-shadow: 0 0 8px var(--error-color);
+            }
+        }
+
         main {
             flex: 1;
             padding: 0.203rem; /* Increased by 35% from 0.15rem */
@@ -445,22 +466,26 @@
         }
 
         .status-dot.idle {
-            background: var(--secondary-text);
+            background: var(--success-color);
+            box-shadow: 0 0 4px rgba(68, 255, 68, 0.3);
         }
 
         .status-dot.working {
-            background: var(--accent-color);
-            animation: pulse 1s infinite;
+            background: var(--error-color);
+            animation: flashRed 0.8s infinite;
+            box-shadow: 0 0 8px var(--error-color);
         }
 
         .status-dot.thinking {
-            background: var(--warning-color);
-            animation: pulse 1.5s infinite;
+            background: var(--error-color);
+            animation: flashRed 1.2s infinite;
+            box-shadow: 0 0 8px var(--error-color);
         }
 
         .status-dot.analyzing {
-            background: #8800ff;
-            animation: pulse 1.2s infinite;
+            background: var(--error-color);
+            animation: flashRed 1.0s infinite;
+            box-shadow: 0 0 8px var(--error-color);
         }
 
         .status-dot.error {
