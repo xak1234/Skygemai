@@ -239,8 +239,14 @@ app.post('/api/llm/chat', async (req, res) => {
             return await handleXAIRequest(req, res);
         } else if (provider === 'deepseek') {
             return await handleDeepSeekRequest(req, res);
+        } else if (provider === 'claude') {
+            return await handleClaudeRequest(req, res);
+        } else if (provider === 'openai') {
+            return await handleOpenAIRequest(req, res);
+        } else if (provider === 'gemini') {
+            return await handleGeminiRequest(req, res);
         } else {
-            return res.status(400).json({ error: 'Unsupported provider. Use "xai" or "deepseek"' });
+            return res.status(400).json({ error: 'Unsupported provider. Use "xai", "deepseek", "claude", "openai", or "gemini"' });
         }
     } catch (error) {
         logger.error('LLM chat error:', error);
@@ -253,6 +259,15 @@ app.post('/api/xai/v1/chat/completions', handleXAIRequest);
 
 // 5. DeepSeek Chat Completions Endpoint  
 app.post('/api/deepseek/chat/completions', handleDeepSeekRequest);
+
+// 6. Claude Chat Completions Endpoint
+app.post('/api/claude/chat/completions', handleClaudeRequest);
+
+// 7. OpenAI Chat Completions Endpoint
+app.post('/api/openai/chat/completions', handleOpenAIRequest);
+
+// 8. Gemini Chat Completions Endpoint
+app.post('/api/gemini/chat/completions', handleGeminiRequest);
 
 // XAI Request Handler
 async function handleXAIRequest(req, res) {
@@ -323,6 +338,139 @@ async function handleDeepSeekRequest(req, res) {
     } catch (error) {
         logger.error('DeepSeek request handler error:', error);
         res.status(500).json({ error: 'Failed to process DeepSeek request' });
+    }
+}
+
+// Claude Request Handler
+async function handleClaudeRequest(req, res) {
+    try {
+        const claudeApiKey = process.env.CLAUDE_KEY;
+        if (!claudeApiKey) {
+            return res.status(500).json({ error: 'Claude API key not configured' });
+        }
+
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+                'x-api-key': claudeApiKey,
+                'Content-Type': 'application/json',
+                'anthropic-version': '2023-06-01'
+            },
+            body: JSON.stringify({
+                model: 'claude-3-sonnet-20240229',
+                max_tokens: req.body.max_tokens || 1000,
+                messages: req.body.messages,
+                temperature: req.body.temperature || 0.7
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            logger.error('Claude API error:', { status: response.status, error: errorData });
+            return res.status(response.status).json({ error: 'Claude API request failed', details: errorData });
+        }
+
+        const data = await response.json();
+        // Convert Claude response format to OpenAI-compatible format
+        const convertedResponse = {
+            choices: [{
+                message: {
+                    role: 'assistant',
+                    content: data.content?.[0]?.text || 'No response'
+                }
+            }]
+        };
+        res.json(convertedResponse);
+    } catch (error) {
+        logger.error('Claude request handler error:', error);
+        res.status(500).json({ error: 'Failed to process Claude request' });
+    }
+}
+
+// OpenAI Request Handler
+async function handleOpenAIRequest(req, res) {
+    try {
+        const openaiApiKey = process.env.OPENAI_API_KEY;
+        if (!openaiApiKey) {
+            return res.status(500).json({ error: 'OpenAI API key not configured' });
+        }
+
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${openaiApiKey}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                model: 'gpt-4o-mini',
+                messages: req.body.messages,
+                temperature: req.body.temperature || 0.7,
+                max_tokens: req.body.max_tokens || 1000
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            logger.error('OpenAI API error:', { status: response.status, error: errorData });
+            return res.status(response.status).json({ error: 'OpenAI API request failed', details: errorData });
+        }
+
+        const data = await response.json();
+        res.json(data);
+    } catch (error) {
+        logger.error('OpenAI request handler error:', error);
+        res.status(500).json({ error: 'Failed to process OpenAI request' });
+    }
+}
+
+// Gemini Request Handler
+async function handleGeminiRequest(req, res) {
+    try {
+        const geminiApiKey = process.env.GEMINI_API_KEY;
+        if (!geminiApiKey) {
+            return res.status(500).json({ error: 'Gemini API key not configured' });
+        }
+
+        // Convert messages to Gemini format
+        const contents = req.body.messages.map(msg => ({
+            role: msg.role === 'assistant' ? 'model' : 'user',
+            parts: [{ text: msg.content }]
+        }));
+
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${geminiApiKey}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                contents: contents,
+                generationConfig: {
+                    temperature: req.body.temperature || 0.7,
+                    maxOutputTokens: req.body.max_tokens || 1000
+                }
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            logger.error('Gemini API error:', { status: response.status, error: errorData });
+            return res.status(response.status).json({ error: 'Gemini API request failed', details: errorData });
+        }
+
+        const data = await response.json();
+        // Convert Gemini response format to OpenAI-compatible format
+        const convertedResponse = {
+            choices: [{
+                message: {
+                    role: 'assistant',
+                    content: data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response'
+                }
+            }]
+        };
+        res.json(convertedResponse);
+    } catch (error) {
+        logger.error('Gemini request handler error:', error);
+        res.status(500).json({ error: 'Failed to process Gemini request' });
     }
 }
 

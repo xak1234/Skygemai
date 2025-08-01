@@ -169,21 +169,26 @@ async function checkProviders(): Promise<void> {
     try {
         updateAgentStatus('researcher', 'working', 'Checking AI provider availability...');
         
-        // Check XAI availability
-        const xaiAvailable = await checkProviderHealth('xai');
-        
-        // Check DeepSeek availability  
-        const deepseekAvailable = await checkProviderHealth('deepseek');
+        // Check all available providers in parallel
+        const [xaiAvailable, deepseekAvailable, claudeAvailable, openaiAvailable, geminiAvailable] = await Promise.all([
+            checkProviderHealth('xai'),
+            checkProviderHealth('deepseek'),
+            checkProviderHealth('claude'),
+            checkProviderHealth('openai'),
+            checkProviderHealth('gemini')
+        ]);
         
         providers = [
             { name: 'XAI', available: xaiAvailable },
             { name: 'DeepSeek', available: deepseekAvailable },
-            { name: 'OpenAI', available: false },
-            { name: 'Claude', available: false }
+            { name: 'Claude', available: claudeAvailable },
+            { name: 'OpenAI', available: openaiAvailable },
+            { name: 'Gemini', available: geminiAvailable }
         ];
         
         updateProviderStatus();
-        updateAgentStatus('researcher', 'idle', `Providers checked: ${providers.filter(p => p.available).length} available`);
+        const availableCount = providers.filter(p => p.available).length;
+        updateAgentStatus('researcher', 'idle', `Providers checked: ${availableCount}/5 available`);
     } catch (error) {
         console.error('Failed to check providers:', error);
         updateAgentStatus('researcher', 'error', 'Failed to check AI providers');
@@ -192,7 +197,28 @@ async function checkProviders(): Promise<void> {
 
 async function checkProviderHealth(provider: string): Promise<boolean> {
     try {
-        const response = await fetch(`/api/${provider === 'xai' ? 'xai/v1' : 'deepseek'}/chat/completions`, {
+        let endpoint = '';
+        switch (provider) {
+            case 'xai':
+                endpoint = '/api/xai/v1/chat/completions';
+                break;
+            case 'deepseek':
+                endpoint = '/api/deepseek/chat/completions';
+                break;
+            case 'claude':
+                endpoint = '/api/claude/chat/completions';
+                break;
+            case 'openai':
+                endpoint = '/api/openai/chat/completions';
+                break;
+            case 'gemini':
+                endpoint = '/api/gemini/chat/completions';
+                break;
+            default:
+                return false;
+        }
+
+        const response = await fetch(endpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -201,9 +227,14 @@ async function checkProviderHealth(provider: string): Promise<boolean> {
             })
         });
         
-        // If we get a response (even an error), the provider is configured
-        return response.status !== 500 || !response.headers.get('content-type')?.includes('json') || 
-               !(await response.json().catch(() => ({}))).error?.includes('not configured');
+        // If we get a 500 error with "not configured" message, provider is not available
+        if (response.status === 500) {
+            const errorData = await response.json().catch(() => ({}));
+            return !errorData.error?.includes('not configured');
+        }
+        
+        // Any other response (including other errors) means the provider is configured
+        return true;
     } catch (error) {
         console.error(`Provider ${provider} health check failed:`, error);
         return false;
