@@ -361,6 +361,72 @@ function setupEventListeners(): void {
         if (url) cloneProject(url);
     });
     
+    // Browse button for folder picker
+    const browseBtn = document.getElementById('browse-btn');
+    const folderPicker = document.getElementById('folder-picker') as HTMLInputElement;
+    
+    browseBtn?.addEventListener('click', () => {
+        folderPicker?.click();
+    });
+    
+    // Handle folder selection
+    folderPicker?.addEventListener('change', (e) => {
+        const files = (e.target as HTMLInputElement).files;
+        if (files && files.length > 0) {
+            // Get the common path from the first file
+            const firstFile = files[0];
+            const webkitPath = (firstFile as any).webkitRelativePath;
+            if (webkitPath) {
+                // Extract the folder path by removing the file name
+                const folderPath = webkitPath.split('/')[0];
+                // For desktop applications, we would use the full system path
+                // But in browser, we'll show the folder name and handle it server-side
+                if (projectSource) {
+                    projectSource.value = folderPath;
+                    showNotification(`Selected folder: ${folderPath}`);
+                }
+            }
+        }
+    });
+    
+    // Add drag and drop functionality for the project source input
+    if (projectSource) {
+        projectSource.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            projectSource.style.borderColor = 'var(--accent-color)';
+            projectSource.style.backgroundColor = 'rgba(0, 255, 136, 0.1)';
+        });
+        
+        projectSource.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            projectSource.style.borderColor = '';
+            projectSource.style.backgroundColor = '';
+        });
+        
+        projectSource.addEventListener('drop', (e) => {
+            e.preventDefault();
+            projectSource.style.borderColor = '';
+            projectSource.style.backgroundColor = '';
+            
+            const items = e.dataTransfer?.items;
+            if (items) {
+                for (let i = 0; i < items.length; i++) {
+                    const item = items[i];
+                    if (item.kind === 'file') {
+                        const entry = item.webkitGetAsEntry();
+                        if (entry && entry.isDirectory) {
+                            // For drag-and-drop, we can get the directory name
+                            // but not the full system path due to browser security
+                            projectSource.value = entry.name;
+                            showNotification(`Dropped folder: ${entry.name}`, 'info');
+                            break;
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
     // Send instruction button
     const sendBtn = document.getElementById('send-instruction');
     const instructionInput = document.getElementById('instruction-input') as HTMLTextAreaElement;

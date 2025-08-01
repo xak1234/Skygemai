@@ -182,6 +182,15 @@
             transform: none;
             box-shadow: none;
         }
+        
+        #browse-btn {
+            background: linear-gradient(45deg, #4a90e2, #357abd);
+            min-width: auto;
+        }
+        
+        #browse-btn:hover:not(:disabled) {
+            background: linear-gradient(45deg, #5ba0f2, #4a8acd);
+        }
 
         .btn-warning {
             background: linear-gradient(45deg, var(--warning-color), #ff6600);
@@ -559,11 +568,14 @@
                             <input
                                 type="text"
                                 id="project-source"
-                                placeholder="GitHub URL or local path (e.g., C:\Projects\MyApp)"
+                                placeholder="GitHub URL, local path (e.g., C:\Projects\MyApp), or drag folder here"
                                 value=""
+                                title="Enter GitHub URL or local folder path, or use Browse button to select folder"
                             />
+                            <button id="browse-btn" type="button" title="Browse for local folder">📁 Browse</button>
                             <button id="clone-btn" type="button">📥 Clone</button>
                         </div>
+                        <input type="file" id="folder-picker" webkitdirectory directory multiple style="display: none;" />
                     </div>
                     <div>
                         <label for="analysis-type">Analysis Type</label>
