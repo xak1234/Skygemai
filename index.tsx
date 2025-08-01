@@ -167,19 +167,46 @@ function updateProgress(percentage: number): void {
 // API functions
 async function checkProviders(): Promise<void> {
     try {
-        // Check actual configured AI providers
+        updateAgentStatus('researcher', 'working', 'Checking AI provider availability...');
+        
+        // Check XAI availability
+        const xaiAvailable = await checkProviderHealth('xai');
+        
+        // Check DeepSeek availability  
+        const deepseekAvailable = await checkProviderHealth('deepseek');
+        
         providers = [
-            { name: 'XAI', available: true },
-            { name: 'DeepSeek', available: true },
+            { name: 'XAI', available: xaiAvailable },
+            { name: 'DeepSeek', available: deepseekAvailable },
             { name: 'OpenAI', available: false },
             { name: 'Claude', available: false }
         ];
+        
         updateProviderStatus();
-        // Update researcher agent status when providers are checked
-        updateAgentStatus('researcher', 'working', 'Checking AI provider availability...');
+        updateAgentStatus('researcher', 'idle', `Providers checked: ${providers.filter(p => p.available).length} available`);
     } catch (error) {
         console.error('Failed to check providers:', error);
         updateAgentStatus('researcher', 'error', 'Failed to check AI providers');
+    }
+}
+
+async function checkProviderHealth(provider: string): Promise<boolean> {
+    try {
+        const response = await fetch(`/api/${provider === 'xai' ? 'xai/v1' : 'deepseek'}/chat/completions`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                messages: [{ role: 'user', content: 'test' }],
+                max_tokens: 1
+            })
+        });
+        
+        // If we get a response (even an error), the provider is configured
+        return response.status !== 500 || !response.headers.get('content-type')?.includes('json') || 
+               !(await response.json().catch(() => ({}))).error?.includes('not configured');
+    } catch (error) {
+        console.error(`Provider ${provider} health check failed:`, error);
+        return false;
     }
 }
 
@@ -264,18 +291,65 @@ async function sendInstruction(instruction: string): Promise<void> {
     const input = document.getElementById('instruction-input') as HTMLTextAreaElement;
     if (input) input.value = '';
     
-    // Simulate AI processing with agent status updates
-    updateAgentStatus('smith', 'thinking', 'Processing user instruction...');
-    
-    setTimeout(() => {
+    try {
+        // Real AI processing with actual API calls
+        updateAgentStatus('smith', 'thinking', 'Processing user instruction...');
+        
+        // Find available provider
+        const availableProvider = providers.find(p => p.available);
+        if (!availableProvider) {
+            throw new Error('No AI providers available');
+        }
+        
+        updateAgentStatus('smith', 'working', `Sending to ${availableProvider.name}...`);
+        
+        const response = await fetch('/api/llm/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                messages: [
+                    { 
+                        role: 'system', 
+                        content: 'You are AgentSmith, coordinating a team of AI agents for code analysis and improvement. Provide a brief response about how you will handle this instruction.' 
+                    },
+                    { role: 'user', content: instruction }
+                ],
+                provider: availableProvider.name.toLowerCase(),
+                max_tokens: 200
+            })
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || `HTTP ${response.status}`);
+        }
+        
+        const result = await response.json();
+        const aiResponse = result.choices?.[0]?.message?.content || 'AI response received';
+        
         updateAgentStatus('smith', 'working', 'Coordinating team response...');
         updateAgentStatus('analyst', 'thinking', 'Analyzing requirements...');
-        showNotification('Instruction sent to AgentSmith team');
+        
+        // Add AI response to terminal
+        addToTerminal('AgentSmith', aiResponse);
+        showNotification(`Instruction processed by ${availableProvider.name}`);
+        
+        // Update system stats
+        systemStatus.tasksCompleted++;
+        systemStatus.iterationCount++;
+        updateSystemStatus();
         
         setTimeout(() => {
             updateAgentStatus('architect', 'analyzing', 'Designing solution approach...');
-        }, 1500);
-    }, 1000);
+            updateAgentStatus('smith', 'idle', 'Ready for next instruction');
+        }, 2000);
+        
+    } catch (error) {
+        console.error('AI processing error:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        updateAgentStatus('smith', 'error', `Failed: ${errorMessage}`);
+        showNotification(`AI processing failed: ${errorMessage}`, 'error');
+    }
 }
 
 // Drag and drop functionality for agents
@@ -418,7 +492,7 @@ function setupEventListeners(): void {
                             // For drag-and-drop, we can get the directory name
                             // but not the full system path due to browser security
                             projectSource.value = entry.name;
-                            showNotification(`Dropped folder: ${entry.name}`, 'info');
+                            showNotification(`Dropped folder: ${entry.name}`);
                             break;
                         }
                     }

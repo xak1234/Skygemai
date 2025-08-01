@@ -226,13 +226,105 @@ app.post('/api/project/clone', async (req, res) => {
 });
 
 // 3. Unified LLM Chat Endpoint
-app.post('/api/llm/chat', (req, res) => {
+app.post('/api/llm/chat', async (req, res) => {
     logger.info('HIT: /api/llm/chat');
-    // ... (Your LLM routing logic)
-    res.status(501).json({ error: 'Unified LLM chat endpoint not yet implemented.' });
+    try {
+        const { messages, provider = 'xai' } = req.body;
+        
+        if (!messages || !Array.isArray(messages)) {
+            return res.status(400).json({ error: 'Messages array is required' });
+        }
+        
+        if (provider === 'xai') {
+            return await handleXAIRequest(req, res);
+        } else if (provider === 'deepseek') {
+            return await handleDeepSeekRequest(req, res);
+        } else {
+            return res.status(400).json({ error: 'Unsupported provider. Use "xai" or "deepseek"' });
+        }
+    } catch (error) {
+        logger.error('LLM chat error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
 });
 
-// ... (Your other existing API routes like /api/xai/v1/chat/completions)
+// 4. XAI Chat Completions Endpoint
+app.post('/api/xai/v1/chat/completions', handleXAIRequest);
+
+// 5. DeepSeek Chat Completions Endpoint  
+app.post('/api/deepseek/chat/completions', handleDeepSeekRequest);
+
+// XAI Request Handler
+async function handleXAIRequest(req, res) {
+    try {
+        const xaiApiKey = process.env.XAI_API_KEY;
+        if (!xaiApiKey) {
+            return res.status(500).json({ error: 'XAI API key not configured' });
+        }
+
+        const response = await fetch('https://api.x.ai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${xaiApiKey}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                model: 'grok-beta',
+                messages: req.body.messages,
+                temperature: req.body.temperature || 0.7,
+                max_tokens: req.body.max_tokens || 1000
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            logger.error('XAI API error:', { status: response.status, error: errorData });
+            return res.status(response.status).json({ error: 'XAI API request failed', details: errorData });
+        }
+
+        const data = await response.json();
+        res.json(data);
+    } catch (error) {
+        logger.error('XAI request handler error:', error);
+        res.status(500).json({ error: 'Failed to process XAI request' });
+    }
+}
+
+// DeepSeek Request Handler
+async function handleDeepSeekRequest(req, res) {
+    try {
+        const deepseekApiKey = process.env.DEEPSEEK_API_KEY;
+        if (!deepseekApiKey) {
+            return res.status(500).json({ error: 'DeepSeek API key not configured' });
+        }
+
+        const response = await fetch('https://api.deepseek.com/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${deepseekApiKey}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                model: 'deepseek-chat',
+                messages: req.body.messages,
+                temperature: req.body.temperature || 0.7,
+                max_tokens: req.body.max_tokens || 1000
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            logger.error('DeepSeek API error:', { status: response.status, error: errorData });
+            return res.status(response.status).json({ error: 'DeepSeek API request failed', details: errorData });
+        }
+
+        const data = await response.json();
+        res.json(data);
+    } catch (error) {
+        logger.error('DeepSeek request handler error:', error);
+        res.status(500).json({ error: 'Failed to process DeepSeek request' });
+    }
+}
 
 
 // =================================================================================
