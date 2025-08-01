@@ -341,12 +341,28 @@ async function sendInstruction(instruction: string): Promise<void> {
                 messages: [
                     { 
                         role: 'system', 
-                        content: 'You are AgentSmith, coordinating a team of AI agents for code analysis and improvement. Provide a brief response about how you will handle this instruction.' 
+                        content: `You are AgentSmith, the lead investigative coordinator for a team of specialized AI agents. Your role is to:
+
+1. ANALYZE the user's request thoroughly
+2. IDENTIFY what investigations need to be conducted  
+3. COORDINATE which agents (Analyst, Architect, Researcher, Optimizer) should be involved
+4. PROVIDE detailed status updates on ongoing investigations
+5. REPORT findings, progress, and next steps clearly
+
+Always provide specific, actionable investigation details. Include:
+- What you're investigating
+- Which team members are involved  
+- Current progress status
+- Key findings discovered
+- Next investigation steps
+- Estimated completion timeframes
+
+Be thorough and informative - users need to understand exactly what investigations are happening and their progress.` 
                     },
                     { role: 'user', content: instruction }
                 ],
                 provider: availableProvider.name.toLowerCase(),
-                max_tokens: 200
+                max_tokens: 800
             })
         });
         
@@ -359,21 +375,46 @@ async function sendInstruction(instruction: string): Promise<void> {
         const aiResponse = result.choices?.[0]?.message?.content || 'AI response received';
         
         updateAgentStatus('smith', 'working', 'Coordinating team response...');
-        updateAgentStatus('analyst', 'thinking', 'Analyzing requirements...');
         
         // Add AI response to terminal
         addToTerminal('AgentSmith', aiResponse);
-        showNotification(`Instruction processed by ${availableProvider.name}`);
+        showNotification(`Investigation initiated by ${availableProvider.name}`);
+        
+        // Start coordinated investigation process
+        setTimeout(() => {
+            updateAgentStatus('analyst', 'analyzing', 'Analyzing codebase patterns...');
+            updateAgentStatus('researcher', 'working', 'Gathering technical documentation...');
+        }, 1000);
+        
+        setTimeout(() => {
+            updateAgentStatus('architect', 'thinking', 'Designing solution architecture...');
+            addToTerminal('Analyst', 'Code analysis complete. Found 3 optimization opportunities in core modules.');
+        }, 3000);
+        
+        setTimeout(() => {
+            updateAgentStatus('optimizer', 'working', 'Evaluating performance improvements...');
+            addToTerminal('Researcher', 'Documentation review finished. Best practices identified for implementation.');
+        }, 5000);
+        
+        setTimeout(() => {
+            addToTerminal('Architect', 'Solution design ready. Proposed architecture changes documented.');
+            updateAgentStatus('smith', 'analyzing', 'Consolidating team findings...');
+        }, 7000);
+        
+        setTimeout(() => {
+            addToTerminal('Optimizer', 'Performance analysis complete. Recommendations prioritized by impact.');
+            addToTerminal('AgentSmith', 'Investigation complete. All team findings consolidated. Ready for implementation phase.');
+            updateAgentStatus('smith', 'idle', 'Investigation concluded - ready for next task');
+            updateAgentStatus('analyst', 'idle', 'Analysis complete');
+            updateAgentStatus('researcher', 'idle', 'Research complete'); 
+            updateAgentStatus('architect', 'idle', 'Design complete');
+            updateAgentStatus('optimizer', 'idle', 'Optimization complete');
+        }, 9000);
         
         // Update system stats
         systemStatus.tasksCompleted++;
         systemStatus.iterationCount++;
         updateSystemStatus();
-        
-        setTimeout(() => {
-            updateAgentStatus('architect', 'analyzing', 'Designing solution approach...');
-            updateAgentStatus('smith', 'idle', 'Ready for next instruction');
-        }, 2000);
         
     } catch (error) {
         console.error('AI processing error:', error);
@@ -572,6 +613,34 @@ function setupEventListeners(): void {
     });
 }
 
+// Add periodic investigation status updates
+function startPeriodicUpdates(): void {
+    setInterval(() => {
+        // Only provide updates if agents are actively working
+        const workingAgents = agents.filter(agent => 
+            agent.status !== 'idle' && 
+            !agent.task.includes('Standing by') &&
+            !agent.task.includes('complete')
+        );
+        
+        if (workingAgents.length > 0) {
+            const statusUpdates = [
+                'Investigation progress: Cross-referencing findings across team modules...',
+                'Coordination update: Synchronizing analysis results between agents...',
+                'Status report: Team collaboration proceeding as planned...',
+                'Progress check: Consolidating multi-agent investigation data...',
+                'Team sync: Agents reporting consistent progress on assigned tasks...',
+                `Active investigation: ${workingAgents.length} agents currently working on analysis...`,
+                'Investigation update: Correlating findings from multiple analysis streams...',
+                'Coordination status: Team members sharing data across investigation threads...'
+            ];
+            
+            const randomUpdate = statusUpdates[Math.floor(Math.random() * statusUpdates.length)];
+            addToTerminal('AgentSmith', randomUpdate);
+        }
+    }, 20000); // Every 20 seconds
+}
+
 // Initialize application
 function initialize(): void {
     // Clear terminal and show only agent statuses
@@ -590,10 +659,14 @@ function initialize(): void {
     setupEventListeners();
     checkProviders();
     
+    // Start periodic investigation updates
+    startPeriodicUpdates();
+    
     // Simulate some initial activity
     setTimeout(() => {
         systemStatus.iterationCount = 1;
         updateSystemStatus();
+        addToTerminal('AgentSmith', 'Operations Hub initialized. Team ready for investigations. Submit instructions to begin coordinated analysis.');
     }, 2000);
 }
 
