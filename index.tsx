@@ -376,40 +376,12 @@ Be thorough and informative - users need to understand exactly what investigatio
         
         updateAgentStatus('smith', 'working', 'Coordinating team response...');
         
-        // Add AI response to terminal
+        // Add Agent Smith's initial response
         addToTerminal('AgentSmith', aiResponse);
-        showNotification(`Investigation initiated by ${availableProvider.name}`);
+        showNotification(`Team investigation initiated by ${availableProvider.name}`);
         
-        // Start coordinated investigation process
-        setTimeout(() => {
-            updateAgentStatus('analyst', 'analyzing', 'Analyzing codebase patterns...');
-            updateAgentStatus('researcher', 'working', 'Gathering technical documentation...');
-        }, 1000);
-        
-        setTimeout(() => {
-            updateAgentStatus('architect', 'thinking', 'Designing solution architecture...');
-            addToTerminal('Analyst', 'Code analysis complete. Found 3 optimization opportunities in core modules.');
-        }, 3000);
-        
-        setTimeout(() => {
-            updateAgentStatus('optimizer', 'working', 'Evaluating performance improvements...');
-            addToTerminal('Researcher', 'Documentation review finished. Best practices identified for implementation.');
-        }, 5000);
-        
-        setTimeout(() => {
-            addToTerminal('Architect', 'Solution design ready. Proposed architecture changes documented.');
-            updateAgentStatus('smith', 'analyzing', 'Consolidating team findings...');
-        }, 7000);
-        
-        setTimeout(() => {
-            addToTerminal('Optimizer', 'Performance analysis complete. Recommendations prioritized by impact.');
-            addToTerminal('AgentSmith', 'Investigation complete. All team findings consolidated. Ready for implementation phase.');
-            updateAgentStatus('smith', 'idle', 'Investigation concluded - ready for next task');
-            updateAgentStatus('analyst', 'idle', 'Analysis complete');
-            updateAgentStatus('researcher', 'idle', 'Research complete'); 
-            updateAgentStatus('architect', 'idle', 'Design complete');
-            updateAgentStatus('optimizer', 'idle', 'Optimization complete');
-        }, 9000);
+        // Start parallel agent investigation with real AI calls
+        await initiateTeamInvestigation(instruction, availableProvider);
         
         // Update system stats
         systemStatus.tasksCompleted++;
@@ -421,6 +393,159 @@ Be thorough and informative - users need to understand exactly what investigatio
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         updateAgentStatus('smith', 'error', `Failed: ${errorMessage}`);
         showNotification(`AI processing failed: ${errorMessage}`, 'error');
+    }
+}
+
+// Team investigation with real AI calls for each agent
+async function initiateTeamInvestigation(instruction: string, provider: ProviderStatus): Promise<void> {
+    const agentPrompts = {
+        analyst: {
+            name: 'Analyst',
+            prompt: `You are the Analyst agent, specializing in code analysis, pattern recognition, and technical assessment. 
+
+Your expertise includes:
+- Code quality analysis and technical debt identification
+- Performance bottleneck detection
+- Security vulnerability assessment  
+- Code pattern analysis and anti-pattern identification
+- Dependency and architecture analysis
+
+Analyze this request and provide your technical analysis perspective. Focus on:
+- Technical implications and considerations
+- Code quality concerns or opportunities
+- Performance impact analysis
+- Security considerations
+- Implementation complexity assessment
+
+Be specific and technical in your analysis.`,
+            status: 'analyzing' as const
+        },
+        researcher: {
+            name: 'Researcher',
+            prompt: `You are the Researcher agent, specializing in technical research, documentation analysis, and best practice identification.
+
+Your expertise includes:
+- Technical documentation research
+- Industry best practices identification
+- Framework and library research
+- API and integration research
+- Standards and compliance research
+
+Research this request and provide your findings. Focus on:
+- Relevant documentation and resources
+- Industry best practices and standards
+- Similar implementations or case studies
+- Potential frameworks, libraries, or tools
+- Compliance or regulatory considerations
+
+Provide well-researched, factual information with specific recommendations.`,
+            status: 'working' as const
+        },
+        architect: {
+            name: 'Architect',
+            prompt: `You are the Architect agent, specializing in system design, architecture planning, and solution design.
+
+Your expertise includes:
+- System architecture design and planning
+- Integration pattern design
+- Scalability and maintainability planning
+- Technology stack selection
+- Design pattern implementation
+
+Design a solution approach for this request. Focus on:
+- Overall architecture and design approach
+- Component interaction and integration patterns
+- Scalability and performance considerations
+- Technology choices and justification
+- Implementation phases and dependencies
+
+Provide a comprehensive architectural perspective with clear design decisions.`,
+            status: 'thinking' as const
+        },
+        optimizer: {
+            name: 'Optimizer',
+            prompt: `You are the Optimizer agent, specializing in performance optimization, efficiency improvements, and resource management.
+
+Your expertise includes:
+- Performance optimization strategies
+- Resource utilization improvement
+- Efficiency enhancement techniques
+- Bottleneck identification and resolution
+- Cost-benefit analysis of optimizations
+
+Evaluate this request for optimization opportunities. Focus on:
+- Performance improvement opportunities
+- Resource efficiency considerations
+- Optimization trade-offs and priorities
+- Measurable improvement targets
+- Implementation effort vs. benefit analysis
+
+Provide specific, actionable optimization recommendations with expected impact.`,
+            status: 'working' as const
+        }
+    };
+
+    // Start all agents with their initial status
+    Object.entries(agentPrompts).forEach(([agentId, config]) => {
+        updateAgentStatus(agentId, config.status, `Processing ${config.name.toLowerCase()} perspective...`);
+    });
+
+    // Make parallel AI calls for all agents
+    const agentPromises = Object.entries(agentPrompts).map(async ([agentId, config]) => {
+        try {
+            const response = await fetch('/api/llm/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    messages: [
+                        { role: 'system', content: config.prompt },
+                        { role: 'user', content: instruction }
+                    ],
+                    provider: provider.name.toLowerCase(),
+                    max_tokens: 600
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+
+            const result = await response.json();
+            const agentResponse = result.choices?.[0]?.message?.content || `${config.name} analysis complete`;
+            
+            // Add response to terminal
+            addToTerminal(config.name, agentResponse);
+            updateAgentStatus(agentId, 'idle', `${config.name} analysis complete`);
+            
+            return { agent: config.name, response: agentResponse };
+        } catch (error) {
+            console.error(`${config.name} AI call failed:`, error);
+            const errorMsg = `Analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
+            addToTerminal(config.name, errorMsg);
+            updateAgentStatus(agentId, 'error', errorMsg);
+            return { agent: config.name, response: errorMsg };
+        }
+    });
+
+    try {
+        // Wait for all agents to complete
+        const results = await Promise.all(agentPromises);
+        
+        // Agent Smith provides final coordination
+        setTimeout(() => {
+            updateAgentStatus('smith', 'analyzing', 'Consolidating all agent findings...');
+            
+            setTimeout(() => {
+                const completedAgents = results.filter(r => !r.response.includes('failed')).length;
+                addToTerminal('AgentSmith', `Team investigation complete! ${completedAgents}/4 agents provided analysis. All perspectives consolidated and ready for implementation.`);
+                updateAgentStatus('smith', 'idle', 'Team coordination complete - ready for next task');
+            }, 2000);
+        }, 1000);
+        
+    } catch (error) {
+        console.error('Team investigation failed:', error);
+        updateAgentStatus('smith', 'error', 'Team coordination failed');
+        addToTerminal('AgentSmith', 'Team investigation encountered errors. Some agents may not have responded.');
     }
 }
 
