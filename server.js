@@ -202,7 +202,7 @@ async function executeTask(agent, reqBody, validatedBody) {
 }
 
 // Middleware
-const helmet = require('helmet');
+
 
 app.use(
   helmet.contentSecurityPolicy({
