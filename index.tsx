@@ -157,136 +157,64 @@ class AgentSmithOpsHub {
       this.logToTerminal('AgentSmith', `Starting iteration ${this.history.length + 1}, Phase: ${currentPhase}`);
       this.logToTerminal('AgentSmith', `Recent activity - Debugger: ${debuggerCount}, Optimizer: ${optimizerCount}, Fixer: ${fixerCount}, CodeManiac: ${codeManiacCount}`);
       
-      const fullPrompt = `AgentSmith: You are an intelligent project orchestrator. Analyze the current state and determine the next action.
-
-PROJECT CONTEXT:
-- Project: ${this.projectSourceInput.value || 'the specified project'}
-- Temp Location: ${this.tempLocationEl.textContent}
-- Analysis History: ${this.history.map(h => `${h.role}: ${h.content}`).join(' | ')}
-- Current Phase: ${currentPhase}
-
-RECENT ACTIVITY ANALYSIS:
-- Recent Debugger calls: ${debuggerCount}
-- Recent Optimizer calls: ${optimizerCount}
-- Recent Fixer calls: ${fixerCount}
-- Recent CodeManiac calls: ${codeManiacCount}
-- Total iterations: ${this.history.length}
-
-CURRENT TASK: ${prompt}
-
-AVAILABLE WORKERS:
-- Agent A (Fixer): Code fixes, implementations, security patches
-- Agent B (Debugger): Bug detection, vulnerability scanning, code quality issues
-- Agent C (Optimizer): Performance optimization, refactoring, architectural improvements
-- Agent D (CodeManiac): Creative solutions, novel approaches, innovative patterns
-
-ANALYSIS STRATEGY:
-1. INITIAL SCAN: "Assign Debugger scan project structure and identify critical files"
-2. SECURITY AUDIT: "Assign Debugger scan for security vulnerabilities in auth, input validation, dependencies"
-3. CODE QUALITY: "Assign Debugger analyze code quality, complexity, and maintainability"
-4. PERFORMANCE: "Assign Optimizer analyze performance bottlenecks, database queries, memory usage"
-5. IMPLEMENTATION: "Assign Fixer implement security patches, performance improvements, or code fixes"
-6. CREATIVE SOLUTIONS: "Assign CodeManiac provide innovative approaches and novel patterns"
-7. FINAL REVIEW: "Assign Debugger perform final code review and validation"
-
-DECISION RULES:
-- If Debugger has been called ${debuggerCount} times recently, prioritize Optimizer or Fixer
-- If Optimizer hasn't been called, assign it for performance analysis
-- If Fixer hasn't been called, assign it for implementation
-- If CodeManiac hasn't been called, assign it for creative solutions
-- If all agents have been used, move to next phase or conclude
-- If in FORCE_PROGRESSION phase, skip Debugger and assign Optimizer, Fixer, or CodeManiac
-- Maximum iterations: 20 (currently at ${this.history.length})
-
-${isStarting ? 'STARTING ANALYSIS: Begin with phase 1 - Initial Scan' : 'CONTINUING ANALYSIS: Determine next appropriate action based on current phase and recent activity'}
-
-OUTPUT: Single action command or "Analysis complete."
-Examples:
-- "Assign Debugger scan project structure and identify critical files"
-- "Assign Optimizer analyze performance bottlenecks, database queries, memory usage"
-- "Assign Fixer implement input validation in user.js"
-- "Assign CodeManiac provide innovative authentication patterns"
-- "Analysis complete. All phases finished."`;
-
-      const response = await fetch('/api/xai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({
-          messages: [
-            {
-              role: 'system',
-              content: `You are AgentSmith, an intelligent AI orchestrator for software project analysis and optimization. You coordinate four specialized agents:
-
-AGENT ROLES:
-- Agent A (Fixer): Implements code fixes, security patches, and improvements
-- Agent B (Debugger): Detects bugs, security vulnerabilities, and code quality issues  
-- Agent C (Optimizer): Optimizes performance, refactors code, and improves architecture
-- Agent D (CodeManiac): Provides creative, innovative, and novel solutions with unconventional approaches
-
-ANALYSIS STRATEGY:
-1. Start with broad project scanning to understand structure
-2. Focus on security vulnerabilities (auth, input validation, dependencies)
-3. Analyze code quality and maintainability
-4. Identify performance bottlenecks and optimization opportunities
-5. Implement fixes and improvements
-6. Explore creative and innovative solutions
-7. Validate all changes
-
-DECISION MAKING:
-- Use specific file paths when possible (e.g., "scan auth.js", "analyze models/user.js")
-- Prioritize security issues over performance
-- Consider project context and previous findings
-- Provide clear, actionable instructions to workers
-- End analysis when all critical areas are covered
-- When user instructions are provided, prioritize and process them immediately
-- User instructions override default analysis flow when specified
-- ALWAYS provide a specific action command, never just repeat the phases
-- AVOID REPETITIVE PATTERNS: If Debugger has been called multiple times recently, assign Optimizer or Fixer instead
-- FORCE PROGRESSION: When stuck in debugger loops, force assignment to other agents
-- CREATIVE SOLUTIONS: Use CodeManiac for innovative approaches and novel patterns
-
-RESPONSE FORMAT: Single action command or "Analysis complete."`
-            },
-            {
-              role: 'user',
-              content: fullPrompt
-            }
-          ],
-          max_tokens: 150, // Increased for more detailed responses
-          temperature: 0.0, // Ultra-low for precision
-          stream: false,
-          top_p: 0.1
-        })
-      });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`XAI API error (${response.status}): ${errorText}`);
-        }
-
-        const data = await response.json();
-        
-        // Handle OpenAI-compatible response format
-        let text = '';
-        if (data.choices && data.choices[0] && data.choices[0].message) {
-          text = data.choices[0].message.content.trim();
+      // Enhanced decision logic to prevent repetitive patterns
+      let nextAction = '';
+      
+      if (isStarting) {
+        nextAction = 'Assign Debugger scan project structure and identify critical files';
+      } else if (currentPhase === 'FORCE_PROGRESSION') {
+        // Force assignment to non-debugger agents
+        if (optimizerCount === 0) {
+          nextAction = 'Assign Optimizer analyze performance bottlenecks, database queries, memory usage';
+        } else if (fixerCount === 0) {
+          nextAction = 'Assign Fixer implement security patches and code improvements';
         } else {
-          // Fallback: log the response for debugging
-          this.logToTerminal('System', `Warning: Unexpected API response format: ${JSON.stringify(data).substring(0, 100)}...`);
-          text = 'Analysis step completed.';
+          nextAction = 'Assign CodeManiac provide innovative solutions and creative refactoring';
         }
-
-        // If the response is just repeating phases, force a specific action
-        if (text.toLowerCase().includes('analysis phases') || text.toLowerCase().includes('phase 1') || text.toLowerCase().includes('phase 2')) {
-          text = isStarting ? 'Assign Debugger scan project structure and identify critical files' : 'Assign Debugger scan for security vulnerabilities in auth, input validation, dependencies';
+      } else if (currentPhase === 'FORCE_IMPLEMENTATION') {
+        nextAction = 'Assign Fixer implement critical fixes and security improvements';
+      } else if (currentPhase === 'FORCE_CREATIVE') {
+        nextAction = 'Assign CodeManiac explore novel architectural patterns and creative solutions';
+      } else if (debuggerCount >= 2 && optimizerCount === 0) {
+        nextAction = 'Assign Optimizer analyze performance bottlenecks, database queries, memory usage';
+      } else if (debuggerCount >= 1 && fixerCount === 0) {
+        nextAction = 'Assign Fixer implement security patches and code improvements';
+      } else if (codeManiacCount === 0 && this.history.length >= 3) {
+        nextAction = 'Assign CodeManiac provide innovative solutions and creative refactoring';
+      } else if (optimizerCount >= 1 && fixerCount === 0) {
+        nextAction = 'Assign Fixer implement performance optimizations and code fixes';
+      } else if (fixerCount >= 1 && codeManiacCount === 0) {
+        nextAction = 'Assign CodeManiac explore novel architectural patterns and creative solutions';
+      } else if (this.history.length >= 8) {
+        nextAction = 'Analysis complete. All phases finished.';
+      } else {
+        // Smart rotation: prioritize agents that haven't been used recently
+        const agentUsage = { debugger: debuggerCount, optimizer: optimizerCount, fixer: fixerCount, codemaniac: codeManiacCount };
+        const leastUsed = Object.entries(agentUsage).sort(([,a], [,b]) => a - b)[0][0];
+        
+        switch (leastUsed) {
+          case 'optimizer':
+            nextAction = 'Assign Optimizer analyze code quality, performance, and architectural improvements';
+            break;
+          case 'fixer':
+            nextAction = 'Assign Fixer implement critical fixes and security improvements';
+            break;
+          case 'codemaniac':
+            nextAction = 'Assign CodeManiac provide innovative approaches and creative solutions';
+            break;
+          default:
+            // Only use debugger if it's truly the least used
+            if (debuggerCount < 2) {
+              nextAction = 'Assign Debugger perform comprehensive security and quality analysis';
+            } else {
+              nextAction = 'Assign Optimizer analyze code quality, performance, and architectural improvements';
+            }
         }
-
-      this.history.push({ role: 'assistant', content: text });
-      this.logToTerminal('AgentSmith', text);
-      return text;
+      }
+      
+      this.history.push({ role: 'assistant', content: nextAction });
+      this.logToTerminal('AgentSmith', nextAction);
+      return nextAction;
     } catch (error) {
       const errorMessage = `Error communicating with XAI API: ${(error as Error).message}`;
       this.logToTerminal('System', errorMessage);
@@ -308,11 +236,29 @@ RESPONSE FORMAT: Single action command or "Analysis complete."`
     const hasRecentFixer = recentHistory.includes('fixer');
     const hasRecentCodeManiac = recentHistory.includes('codemaniac');
     
+    // Count recent agent usage
+    const recentActions = this.history.slice(-5).map(h => h.role);
+    const debuggerCount = recentActions.filter(role => role.includes('Debugger')).length;
+    const optimizerCount = recentActions.filter(role => role.includes('Optimizer')).length;
+    const fixerCount = recentActions.filter(role => role.includes('Fixer')).length;
+    const codeManiacCount = recentActions.filter(role => role.includes('CodeManiac')).length;
+    
     // If we've had multiple recent debugger calls, force progression
-    if (hasRecentDebugger && !hasRecentOptimizer && !hasRecentFixer && !hasRecentCodeManiac) {
+    if (debuggerCount >= 2 && (optimizerCount === 0 || fixerCount === 0)) {
       return 'FORCE_PROGRESSION';
     }
     
+    // If we've used all agents but haven't moved to implementation, force it
+    if (debuggerCount >= 1 && optimizerCount >= 1 && fixerCount === 0) {
+      return 'FORCE_IMPLEMENTATION';
+    }
+    
+    // If we've done implementation but haven't explored creative solutions
+    if (fixerCount >= 1 && codeManiacCount === 0) {
+      return 'FORCE_CREATIVE';
+    }
+    
+    // Normal phase detection
     if (historyText.includes('security') || historyText.includes('vulnerability')) {
       return 'SECURITY AUDIT';
     } else if (historyText.includes('quality') || historyText.includes('complexity')) {
@@ -492,6 +438,9 @@ REPORT FORMAT: Provide specific findings with file paths, line numbers, and acti
         // Add anti-repetition logic
         const recentActions = this.history.slice(-3).map(h => h.role);
         const debuggerCount = recentActions.filter(role => role.includes('Debugger')).length;
+        const optimizerCount = recentActions.filter(role => role.includes('Optimizer')).length;
+        const fixerCount = recentActions.filter(role => role.includes('Fixer')).length;
+        const codeManiacCount = recentActions.filter(role => role.includes('CodeManiac')).length;
         
         let enhancedTaskPrompt = taskPrompt;
         if (debuggerCount >= 2) {
@@ -514,15 +463,26 @@ REPORT FORMAT: Provide specific findings with file paths, line numbers, and acti
         let workerId: keyof typeof this.agents | null = null;
         const plan = smithsPlan.toLowerCase();
         
-        // Enhanced worker assignment logic with anti-repetition
+        // Enhanced worker assignment logic with better diversity
+        const recentWorkerUsage = this.history.slice(-3).map(h => h.role).join(' ').toLowerCase();
+        
         if (plan.includes('assign debugger') || plan.includes('debug') || plan.includes('scan') || plan.includes('find bug') || plan.includes('security') || plan.includes('vulnerability') || plan.includes('quality') || plan.includes('audit')) {
-          // Only assign Debugger if we haven't used it recently
-          if (debuggerCount < 2) {
+          // Only assign Debugger if we haven't used it recently and it's not overused
+          if (debuggerCount < 2 && !recentWorkerUsage.includes('debugger')) {
             workerId = 'b';
             this.logToTerminal('AgentSmith', 'Assigning task to Debugger (Agent B)');
           } else {
-            this.logToTerminal('AgentSmith', 'Skipping Debugger due to recent overuse. Forcing Optimizer assignment.');
-            workerId = 'c';
+            // Force assignment to a different agent
+            if (optimizerCount === 0) {
+              workerId = 'c';
+              this.logToTerminal('AgentSmith', 'Debugger overused. Forcing Optimizer assignment.');
+            } else if (fixerCount === 0) {
+              workerId = 'a';
+              this.logToTerminal('AgentSmith', 'Debugger overused. Forcing Fixer assignment.');
+            } else {
+              workerId = 'd';
+              this.logToTerminal('AgentSmith', 'Debugger overused. Forcing CodeManiac assignment.');
+            }
           }
         } else if (plan.includes('assign optimizer') || plan.includes('optimize') || plan.includes('refactor') || plan.includes('improve performance') || plan.includes('performance') || plan.includes('bottleneck') || plan.includes('memory') || plan.includes('database')) {
             workerId = 'c';
@@ -534,9 +494,27 @@ REPORT FORMAT: Provide specific findings with file paths, line numbers, and acti
             workerId = 'd';
             this.logToTerminal('AgentSmith', 'Assigning task to CodeManiac (Agent D) for creative solutions');
         } else {
-            // Fallback: if no specific assignment, default to optimizer instead of debugger
-            workerId = 'c';
-            this.logToTerminal('AgentSmith', 'No specific worker assigned, defaulting to Optimizer for analysis.');
+            // Smart fallback: choose the least recently used agent
+            const agentUsage = { debugger: debuggerCount, optimizer: optimizerCount, fixer: fixerCount, codemaniac: codeManiacCount };
+            const leastUsed = Object.entries(agentUsage).sort(([,a], [,b]) => a - b)[0][0];
+            
+            switch (leastUsed) {
+              case 'optimizer':
+                workerId = 'c';
+                this.logToTerminal('AgentSmith', 'No specific assignment. Defaulting to Optimizer (least used).');
+                break;
+              case 'fixer':
+                workerId = 'a';
+                this.logToTerminal('AgentSmith', 'No specific assignment. Defaulting to Fixer (least used).');
+                break;
+              case 'codemaniac':
+                workerId = 'd';
+                this.logToTerminal('AgentSmith', 'No specific assignment. Defaulting to CodeManiac (least used).');
+                break;
+              default:
+                workerId = 'c';
+                this.logToTerminal('AgentSmith', 'No specific assignment. Defaulting to Optimizer.');
+            }
         }
 
         if (workerId) {
