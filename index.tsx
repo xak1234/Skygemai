@@ -104,7 +104,14 @@ class AgentSmithOpsHub {
           **OUTPUT MUST BE A VALID JSON OBJECT.**
         `;
 
-        return this.callLLM({ provider: 'openai', prompt: planningPrompt });
+        const response = await this.callLLM({ provider: 'openai', prompt: planningPrompt }) as AgentPlan;
+        return {
+            thought: response.thought || '',
+            tool: response.tool || '',
+            model: response.model || '',
+            task: response.task || '',
+            targetFiles: response.targetFiles || []
+        };
     }
     
     private async mainLoop() {
