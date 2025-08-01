@@ -4,7 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AgentSmith Ops Hub</title>
-    <link rel="icon" href="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/hub/default/48px.svg">
+    <!-- FIXED: Using an emoji as a data URI for the icon to avoid CSP issues -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔧</text></svg>">
   </head>
   <body>
     <div id="app">
@@ -18,10 +19,10 @@
             <input
               type="text"
               id="project-source"
-              placeholder="Enter GitHub repo URL or local path..."
-              value="github.com/example/web-app"
+              placeholder="Enter public GitHub repo URL..."
+              value="https://github.com/example/web-app"
             />
-            <button id="start-btn" type="button">▶️ Start</button>
+            <button id="start-btn" type="button" disabled>▶️ Start</button>
           </div>
         </div>
         <div class="panel temp-location-panel">
@@ -35,9 +36,8 @@
           <div class="instruction-input-group">
             <textarea
               id="instruction-input"
-              placeholder="Type your message here and press Enter to send...&#10;Use ↑/↓ arrows to navigate command history&#10;&#10;Examples:&#10;- Focus on security vulnerabilities in auth.js&#10;- Analyze performance bottlenecks in database queries&#10;- Implement input validation for user forms&#10;- Scan for SQL injection vulnerabilities&#10;- Optimize memory usage in image processing"
+              placeholder="Type your high-level goal here and press Enter to send...&#10;e.g., Fix all security vulnerabilities in the auth system."
               rows="4"
-              disabled
             ></textarea>
           </div>
           <div class="instruction-history">
@@ -83,6 +83,15 @@
           <div id="agent-d" class="agent">
             <span class="status-dot idle" aria-label="Idle"></span>
             <span class="agent-name">🤖 Agent D (CodeManiac)</span>
+          </div>
+          <!-- FIXED: Added the missing agent divs -->
+          <div id="agent-e" class="agent">
+            <span class="status-dot idle" aria-label="Idle"></span>
+            <span class="agent-name">🔬 Agent E (Researcher)</span>
+          </div>
+          <div id="agent-f" class="agent">
+            <span class="status-dot idle" aria-label="Idle"></span>
+            <span class="agent-name">🧪 Agent F (Tester)</span>
           </div>
         </div>
       </footer>
