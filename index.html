@@ -1,101 +1,704 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
+<head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AgentSmith Ops Hub</title>
-    <!-- FIXED: Using an emoji as a data URI for the icon to avoid CSP issues -->
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔧</text></svg>">
-  </head>
-  <body>
+    <title>Enhanced AgentSmith Ops Hub</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🤖</text></svg>">
+    <style>
+        :root {
+            --primary-bg: #0a0a0a;
+            --secondary-bg: #1a1a1a;
+            --accent-bg: #2a2a2a;
+            --primary-text: #e0e0e0;
+            --secondary-text: #a0a0a0;
+            --accent-color: #00ff88;
+            --warning-color: #ff8800;
+            --error-color: #ff4444;
+            --success-color: #44ff44;
+            --border-color: #333;
+            --glow: 0 0 20px rgba(0, 255, 136, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            background: linear-gradient(135deg, var(--primary-bg) 0%, #0f0f0f 100%);
+            color: var(--primary-text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background: var(--secondary-bg);
+            padding: 1rem 2rem;
+            border-bottom: 2px solid var(--accent-color);
+            box-shadow: var(--glow);
+        }
+
+        header h1 {
+            font-size: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .icon {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        main {
+            flex: 1;
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            grid-template-rows: auto auto 1fr;
+            gap: 1.5rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .panel {
+            background: var(--secondary-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .panel:hover {
+            border-color: var(--accent-color);
+            box-shadow: var(--glow);
+        }
+
+        .panel h3 {
+            color: var(--accent-color);
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+
+        .project-panel {
+            grid-column: 1 / -1;
+        }
+
+        .config-panel {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .status-panel {
+            grid-column: 1;
+            grid-row: 2;
+        }
+
+        .communication-panel {
+            grid-column: 2;
+            grid-row: 2;
+        }
+
+        .terminal-panel {
+            grid-column: 1 / -1;
+            grid-row: 3;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        input[type="text"], textarea, select {
+            background: var(--accent-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--primary-text);
+            padding: 0.75rem;
+            font-family: inherit;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        input[type="text"]:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.2);
+        }
+
+        input[type="text"] {
+            flex: 1;
+        }
+
+        textarea {
+            width: 100%;
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        button {
+            background: linear-gradient(45deg, var(--accent-color), #00cc6a);
+            border: none;
+            border-radius: 4px;
+            color: var(--primary-bg);
+            padding: 0.75rem 1.5rem;
+            font-family: inherit;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 255, 136, 0.4);
+        }
+
+        button:disabled {
+            background: var(--border-color);
+            color: var(--secondary-text);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-warning {
+            background: linear-gradient(45deg, var(--warning-color), #ff6600);
+        }
+
+        .btn-error {
+            background: linear-gradient(45deg, var(--error-color), #cc0000);
+        }
+
+        .terminal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .terminal-dots {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .dot.red { background: var(--error-color); }
+        .dot.yellow { background: var(--warning-color); }
+        .dot.green { background: var(--success-color); }
+
+        #terminal {
+            background: var(--primary-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 1rem;
+            height: 400px;
+            overflow-y: auto;
+            font-family: 'Consolas', monospace;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            flex: 1;
+        }
+
+        .terminal-line {
+            margin-bottom: 0.5rem;
+            padding: 0.25rem 0;
+        }
+
+        .terminal-timestamp {
+            color: var(--secondary-text);
+            font-size: 0.8rem;
+        }
+
+        .terminal-sender {
+            color: var(--accent-color);
+            font-weight: bold;
+        }
+
+        .terminal-message {
+            color: var(--primary-text);
+            margin-left: 1rem;
+        }
+
+        .controls {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            justify-content: center;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .status-item {
+            background: var(--accent-bg);
+            padding: 1rem;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .status-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--accent-color);
+        }
+
+        .status-label {
+            font-size: 0.8rem;
+            color: var(--secondary-text);
+            margin-top: 0.25rem;
+        }
+
+        .provider-status {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .provider-chip {
+            background: var(--accent-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 0.25rem 0.75rem;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .provider-chip.available {
+            border-color: var(--success-color);
+            background: rgba(68, 255, 68, 0.1);
+        }
+
+        .provider-chip.unavailable {
+            border-color: var(--error-color);
+            background: rgba(255, 68, 68, 0.1);
+        }
+
+        .instruction-history {
+            margin-top: 1rem;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            background: var(--accent-bg);
+            border-radius: 4px;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            border-left: 3px solid var(--accent-color);
+        }
+
+        .history-timestamp {
+            font-size: 0.7rem;
+            color: var(--secondary-text);
+            margin-bottom: 0.25rem;
+        }
+
+        footer {
+            background: var(--secondary-bg);
+            padding: 1rem 2rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .agent-status-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .agent {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            background: var(--accent-bg);
+            padding: 0.75rem;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .agent:hover {
+            background: rgba(0, 255, 136, 0.1);
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .status-dot.idle {
+            background: var(--secondary-text);
+        }
+
+        .status-dot.working {
+            background: var(--accent-color);
+            animation: pulse 1s infinite;
+        }
+
+        .status-dot.thinking {
+            background: var(--warning-color);
+            animation: pulse 1.5s infinite;
+        }
+
+        .status-dot.analyzing {
+            background: #8800ff;
+            animation: pulse 1.2s infinite;
+        }
+
+        .status-dot.error {
+            background: var(--error-color);
+        }
+
+        .status-dot.paused {
+            background: var(--warning-color);
+        }
+
+        .agent-name {
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .agent-task {
+            font-size: 0.7rem;
+            color: var(--secondary-text);
+            margin-top: 0.25rem;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: var(--accent-bg);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 1rem;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-color), #00cc6a);
+            width: 0%;
+            transition: width 0.3s ease;
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -200px 0; }
+            100% { background-position: 200px 0; }
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--secondary-bg);
+            border: 1px solid var(--accent-color);
+            border-radius: 4px;
+            padding: 1rem;
+            max-width: 300px;
+            box-shadow: var(--glow);
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.success {
+            border-color: var(--success-color);
+        }
+
+        .notification.warning {
+            border-color: var(--warning-color);
+        }
+
+        .notification.error {
+            border-color: var(--error-color);
+        }
+
+        @media (max-width: 1024px) {
+            main {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto auto 1fr;
+            }
+
+            .project-panel {
+                grid-column: 1;
+                grid-row: 1;
+            }
+
+            .status-panel {
+                grid-column: 1;
+                grid-row: 2;
+            }
+
+            .communication-panel {
+                grid-column: 1;
+                grid-row: 3;
+            }
+
+            .terminal-panel {
+                grid-column: 1;
+                grid-row: 4;
+            }
+
+            .agent-status-bar {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            }
+        }
+
+        @media (max-width: 768px) {
+            main {
+                padding: 1rem;
+            }
+
+            header {
+                padding: 1rem;
+            }
+
+            header h1 {
+                font-size: 1.5rem;
+            }
+
+            .input-group {
+                flex-direction: column;
+            }
+
+            .controls {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+<body>
     <div id="app">
-      <header>
-        <h1><span class="icon">🔧</span> AgentSmith Ops Hub</h1>
-      </header>
-      <main>
-        <div class="panel project-panel">
-          <label for="project-source">🗂️ Project Source</label>
-          <div class="input-group">
-            <input
-              type="text"
-              id="project-source"
-              placeholder="Enter public GitHub repo URL..."
-              value="https://github.com/example/web-app"
-            />
-            <button id="start-btn" type="button" disabled>▶️ Start</button>
-          </div>
-        </div>
-        <div class="panel temp-location-panel">
-          <label>📁 Temp Copy Location</label>
-          <span id="temp-location">Waiting for process to start...</span>
-        </div>
-        <div class="panel communication-panel">
-          <div class="communication-header">
-            <h3>💬 Direct AgentSmith Communication</h3>
-          </div>
-          <div class="instruction-input-group">
-            <textarea
-              id="instruction-input"
-              placeholder="Type your high-level goal here and press Enter to send...&#10;e.g., Fix all security vulnerabilities in the auth system."
-              rows="4"
-            ></textarea>
-          </div>
-          <div class="instruction-history">
-            <h4>📝 Chat History</h4>
-            <div id="instruction-history-list"></div>
-          </div>
-        </div>
-        <div class="panel terminal-panel">
-          <div class="terminal-header">
-            <h3>🧠 AgentSmith Terminal</h3>
-            <div class="terminal-dots">
-              <span class="dot red"></span>
-              <span class="dot yellow"></span>
-              <span class="dot green"></span>
+        <header>
+            <h1><span class="icon">🤖</span> Enhanced AgentSmith Ops Hub</h1>
+        </header>
+        
+        <main>
+            <!-- Project Configuration Panel -->
+            <div class="panel project-panel">
+                <h3>🗂️ Project Configuration</h3>
+                <div class="config-panel">
+                    <div>
+                        <label for="project-source">Project Source</label>
+                        <div class="input-group">
+                            <input
+                                type="text"
+                                id="project-source"
+                                placeholder="Enter GitHub repo URL or upload files..."
+                                value="https://github.com/example/web-app"
+                            />
+                            <button id="clone-btn" type="button">📥 Clone</button>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="analysis-type">Analysis Type</label>
+                        <select id="analysis-type">
+                            <option value="full">🔍 Full Analysis</option>
+                            <option value="security">🔒 Security Focus</option>
+                            <option value="performance">⚡ Performance Focus</option>
+                            <option value="architecture">🏗️ Architecture Focus</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="input-group" style="margin-top: 1rem;">
+                    <button id="start-btn" type="button" disabled>🚀 Start AgentSmith</button>
+                    <button id="analyze-btn" type="button" disabled>🔍 Analyze Project</button>
+                    <button id="export-btn" type="button" disabled>📦 Export Project</button>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
             </div>
-          </div>
-          <div id="terminal" aria-live="polite" role="log"></div>
-          <div id="controls" class="controls">
-            <button id="pause-btn" type="button" disabled>⏸️ Pause</button>
-            <button id="stop-btn" type="button" disabled>⏹️ Stop</button>
-            <button id="cancel-btn" type="button" disabled>❌ Cancel</button>
-          </div>
-        </div>
-      </main>
-      <footer>
-        <div class="agent-status-bar">
-          <div id="agent-smith" class="agent">
-            <span class="status-dot idle" aria-label="Idle"></span>
-            <span class="agent-name">🧠 AgentSmith</span>
-          </div>
-          <div id="agent-a" class="agent">
-            <span class="status-dot idle" aria-label="Idle"></span>
-            <span class="agent-name">🛠️ Agent A (Fixer)</span>
-          </div>
-          <div id="agent-b" class="agent">
-            <span class="status-dot idle" aria-label="Idle"></span>
-            <span class="agent-name">🕵️ Agent B (Debugger)</span>
-          </div>
-          <div id="agent-c" class="agent">
-            <span class="status-dot idle" aria-label="Idle"></span>
-            <span class="agent-name">🚀 Agent C (Optimizer)</span>
-          </div>
-          <div id="agent-d" class="agent">
-            <span class="status-dot idle" aria-label="Idle"></span>
-            <span class="agent-name">🤖 Agent D (CodeManiac)</span>
-          </div>
-          <!-- FIXED: Added the missing agent divs -->
-          <div id="agent-e" class="agent">
-            <span class="status-dot idle" aria-label="Idle"></span>
-            <span class="agent-name">🔬 Agent E (Researcher)</span>
-          </div>
-          <div id="agent-f" class="agent">
-            <span class="status-dot idle" aria-label="Idle"></span>
-            <span class="agent-name">🧪 Agent F (Tester)</span>
-          </div>
-        </div>
-      </footer>
+
+            <!-- Status Panel -->
+            <div class="panel status-panel">
+                <h3>📊 System Status</h3>
+                <div class="status-grid">
+                    <div class="status-item">
+                        <div class="status-value" id="iteration-count">0</div>
+                        <div class="status-label">Iterations</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-value" id="confidence-score">0%</div>
+                        <div class="status-label">Confidence</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-value" id="files-modified">0</div>
+                        <div class="status-label">Files Modified</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-value" id="tasks-completed">0</div>
+                        <div class="status-label">Tasks Done</div>
+                    </div>
+                </div>
+                
+                <h4>AI Providers</h4>
+                <div class="provider-status" id="provider-status">
+                    <div class="provider-chip unavailable">
+                        <span>🔴</span> Loading...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Communication Panel -->
+            <div class="panel communication-panel">
+                <h3>💬 AgentSmith Communication</h3>
+                <div class="instruction-input-group">
+                    <textarea
+                        id="instruction-input"
+                        placeholder="Describe your goal in detail...&#10;&#10;Examples:&#10;• Fix all security vulnerabilities in auth system&#10;• Optimize React app performance&#10;• Add user authentication with JWT&#10;• Refactor code to use TypeScript"
+                        rows="4"
+                    ></textarea>
+                    <button id="send-instruction" type="button">📤 Send</button>
+                </div>
+                
+                <div class="instruction-history">
+                    <h4>📝 Conversation History</h4>
+                    <div id="instruction-history-list">
+                        <div class="history-item">
+                            <div class="history-timestamp">System initialized</div>
+                            <div>Welcome to Enhanced AgentSmith! Ready to assist with your development tasks.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Terminal Panel -->
+            <div class="panel terminal-panel">
+                <div class="terminal-header">
+                    <h3>🧠 AgentSmith Terminal</h3>
+                    <div class="terminal-dots">
+                        <span class="dot red"></span>
+                        <span class="dot yellow"></span>
+                        <span class="dot green"></span>
+                    </div>
+                </div>
+                <div id="terminal" aria-live="polite" role="log">
+                    <div class="terminal-line">
+                        <span class="terminal-timestamp">[00:00:00]</span>
+                        <span class="terminal-sender">System</span>
+                        <div class="terminal-message">Enhanced AgentSmith Ops Hub initialized. Ready for operations.</div>
+                    </div>
+                </div>
+                <div id="controls" class="controls">
+                    <button id="pause-btn" type="button" disabled>⏸️ Pause</button>
+                    <button id="resume-btn" type="button" disabled>▶️ Resume</button>
+                    <button id="stop-btn" type="button" disabled class="btn-warning">⏹️ Stop</button>
+                    <button id="cancel-btn" type="button" disabled class="btn-error">❌ Cancel</button>
+                    <button id="clear-terminal" type="button">🗑️ Clear</button>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <div class="agent-status-bar">
+                <div id="agent-smith" class="agent">
+                    <span class="status-dot idle" id="smith-status" aria-label="Idle"></span>
+                    <div>
+                        <div class="agent-name">🧠 AgentSmith (Director)</div>
+                        <div class="agent-task" id="smith-task">Waiting for instructions...</div>
+                    </div>
+                </div>
+                <div id="agent-analyst" class="agent">
+                    <span class="status-dot idle" id="analyst-status" aria-label="Idle"></span>
+                    <div>
+                        <div class="agent-name">📊 CodeAnalyst</div>
+                        <div class="agent-task" id="analyst-task">Ready for analysis</div>
+                    </div>
+                </div>
+                <div id="agent-architect" class="agent">
+                    <span class="status-dot idle" id="architect-status" aria-label="Idle"></span>
+                    <div>
+                        <div class="agent-name">🏗️ SystemArchitect</div>
+                        <div class="agent-task" id="architect-task">Ready for design</div>
+                    </div>
+                </div>
+                <div id="agent-fixer" class="agent">
+                    <span class="status-dot idle" id="fixer-status" aria-label="Idle"></span>
+                    <div>
+                        <div class="agent-name">🛠️ Fixer</div>
+                        <div class="agent-task" id="fixer-task">Ready to fix code</div>
+                    </div>
+                </div>
+                <div id="agent-debugger" class="agent">
+                    <span class="status-dot idle" id="debugger-status" aria-label="Idle"></span>
+                    <div>
+                        <div class="agent-name">🕵️ Debugger</div>
+                        <div class="agent-task" id="debugger-task">Ready to debug</div>
+                    </div>
+                </div>
+                <div id="agent-optimizer" class="agent">
+                    <span class="status-dot idle" id="optimizer-status" aria-label="Idle"></span>
+                    <div>
+                        <div class="agent-name">🚀 Optimizer</div>
+                        <div class="agent-task" id="optimizer-task">Ready to optimize</div>
+                    </div>
+                </div>
+                <div id="agent-codemaniac" class="agent">
+                    <span class="status-dot idle" id="codemaniac-status" aria-label="Idle"></span>
+                    <div>
+                        <div class="agent-name">🤖 CodeManiac</div>
+                        <div class="agent-task" id="codemaniac-task">Ready to code</div>
+                    </div>
+                </div>
+                <div id="agent-researcher" class="agent">
+                    <span class="status-dot idle" id="researcher-status" aria-label="Idle"></span>
+                    <div>
+                        <div class="agent-name">🔬 Researcher</div>
+                        <div class="agent-task" id="researcher-task">Ready to research</div>
+                    </div>
+                </div>
+                <div id="agent-tester" class="agent">
+                    <span class="status-dot idle" id="tester-status" aria-label="Idle"></span>
+                    <div>
+                        <div class="agent-name">🧪 Tester</div>
+                        <div class="agent-task" id="tester-task">Ready to test</div>
+                    </div>
+                </div>
+            </div>
+        </footer>
     </div>
+
+    <!-- Notification Container -->
+    <div id="notification" class="notification">
+        <div id="notification-content"></div>
+    </div>
+
     <script type="module" src="/index.tsx"></script>
-  </body>
+</body>
 </html>
