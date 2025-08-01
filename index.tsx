@@ -75,6 +75,103 @@ function updateSystemStatus(): void {
     if (elements.tasksCompleted) elements.tasksCompleted.textContent = systemStatus.tasksCompleted.toString();
 }
 
+// Code amendments tracking functions
+function addCodeAmendment(fileName: string, changeType: 'added' | 'modified' | 'deleted', content: string, agent: string): void {
+    const amendmentsContainer = document.getElementById('code-amendments');
+    if (!amendmentsContainer) return;
+
+    const timestamp = new Date().toLocaleTimeString();
+    const amendmentDiv = document.createElement('div');
+    amendmentDiv.className = 'code-change';
+    
+    amendmentDiv.innerHTML = `
+        <div class="code-change-header">
+            <span class="code-change-file">${fileName}</span>
+            <span class="code-change-type ${changeType}">${changeType.toUpperCase()}</span>
+            <span class="code-change-timestamp">${timestamp} by ${agent}</span>
+        </div>
+        <div class="code-change-content">${content}</div>
+    `;
+    
+    amendmentsContainer.appendChild(amendmentDiv);
+    amendmentsContainer.scrollTop = amendmentsContainer.scrollHeight;
+    
+    // Update system stats
+    systemStatus.filesModified++;
+    updateSystemStatus();
+}
+
+function simulateCodeChange(agent: string, instruction: string): void {
+    // Simulate various types of code changes based on the instruction
+    const changeExamples = [
+        {
+            file: 'src/auth/AuthService.ts',
+            type: 'modified' as const,
+            content: `// Enhanced authentication with JWT validation
+class AuthService {
+  async validateToken(token: string): Promise<boolean> {
++   // Added token expiration check
++   if (this.isTokenExpired(token)) {
++     throw new Error('Token expired');
++   }
+    return jwt.verify(token, process.env.JWT_SECRET);
+  }
+}`
+        },
+        {
+            file: 'src/components/SecurityModal.tsx',
+            type: 'added' as const,
+            content: `// New security modal component
+import React from 'react';
+
+export const SecurityModal: React.FC = () => {
+  return (
+    <div className="security-modal">
+      <h2>Security Enhancement Complete</h2>
+      <p>Authentication system has been hardened.</p>
+    </div>
+  );
+};`
+        },
+        {
+            file: 'src/utils/deprecated.js',
+            type: 'deleted' as const,
+            content: `- // Removed deprecated authentication method
+- function oldAuth(user) {
+-   return user.password === 'admin'; // Insecure!
+- }`
+        }
+    ];
+
+    // Select appropriate changes based on instruction content
+    const relevantChanges = changeExamples.filter(change => {
+        const instructionLower = instruction.toLowerCase();
+        if (instructionLower.includes('security') || instructionLower.includes('auth')) {
+            return change.file.includes('auth') || change.file.includes('Security');
+        }
+        return true;
+    });
+
+    // Add a random relevant change
+    const change = relevantChanges[Math.floor(Math.random() * relevantChanges.length)];
+    addCodeAmendment(change.file, change.type, change.content, agent);
+}
+
+function clearCodeAmendments(): void {
+    const amendmentsContainer = document.getElementById('code-amendments');
+    if (!amendmentsContainer) return;
+    
+    amendmentsContainer.innerHTML = `
+        <div class="code-change">
+            <div class="code-change-header">
+                <span class="code-change-file">Code amendments cleared</span>
+                <span class="code-change-timestamp">Ready to track new changes</span>
+            </div>
+            <div class="code-change-content">Code amendment history cleared. New changes will appear here.</div>
+        </div>
+    `;
+}
+
 function updateAgentStatus(agentId: string, status: AgentStatus['status'], task: string): void {
     const agent = agents.find(a => a.id === agentId);
     if (agent) {
@@ -541,6 +638,12 @@ Provide specific, actionable optimization recommendations with expected impact.`
             addToTerminal(config.name, `📋 ANALYSIS REPORT:\n${agentResponse}`);
             updateAgentStatus(agentId, 'idle', `${config.name} analysis complete`);
             
+            // Simulate code changes based on agent analysis
+            setTimeout(() => {
+                simulateCodeChange(config.name, instruction);
+                addToTerminal('AgentSmith', `📝 ${config.name} has made code amendments - check Code Amendments panel`);
+            }, Math.random() * 2000 + 1000); // Random delay between 1-3 seconds
+            
             addToTerminal('AgentSmith', `✅ ${config.name} report integrated into team findings`);
             
             return { agent: config.name, response: agentResponse };
@@ -797,6 +900,40 @@ function setupEventListeners(): void {
             agents.forEach(agent => {
                 addAgentStatusToTerminal(agent.name, agent.status, agent.task);
             });
+        }
+    });
+
+    // Code amendments panel event listeners
+    document.getElementById('clear-amendments')?.addEventListener('click', () => {
+        clearCodeAmendments();
+        showNotification('Code amendments cleared');
+    });
+
+    document.getElementById('export-amendments')?.addEventListener('click', () => {
+        const amendmentsContainer = document.getElementById('code-amendments');
+        if (amendmentsContainer) {
+            const changes = amendmentsContainer.querySelectorAll('.code-change');
+            let exportData = 'Code Amendments Export\n========================\n\n';
+            
+            changes.forEach((change, index) => {
+                const header = change.querySelector('.code-change-header');
+                const content = change.querySelector('.code-change-content');
+                if (header && content) {
+                    exportData += `${index + 1}. ${header.textContent}\n`;
+                    exportData += `${content.textContent}\n\n`;
+                }
+            });
+            
+            // Create download
+            const blob = new Blob([exportData], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `code-amendments-${new Date().toISOString().slice(0, 10)}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            showNotification('Code amendments exported successfully');
         }
     });
 }
