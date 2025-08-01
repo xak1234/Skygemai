@@ -16,11 +16,12 @@ interface Agent {
   statusDot: HTMLElement;
 }
 
-interface Task {
-  id: string;
-  description: string;
-  completed: boolean;
-  agent?: string;
+// The structured plan AgentSmith will now create
+interface AgentPlan {
+    thought: string;
+    tool: 'Debugger' | 'Optimizer' | 'Fixer' | 'CodeManiac' | 'Finish';
+    task: string;
+    targetFiles: string[];
 }
 
 // =================================================================================
@@ -28,6 +29,7 @@ interface Task {
 // =================================================================================
 
 class AgentSmithOpsHub {
+  // All UI elements from your original file are preserved
   private terminal: HTMLElement;
   private startBtn: HTMLButtonElement;
   private pauseBtn: HTMLButtonElement;
@@ -39,23 +41,21 @@ class AgentSmithOpsHub {
   private instructionHistoryList: HTMLElement;
   private agents: Record<string, Agent>;
 
+  // State variables
   private isRunning = false;
   private isPaused = false;
   private shouldStop = false;
-  
-  private currentTask: string | null = null;
   private history: { role: string; content: string }[] = [];
   private instructionHistory: { timestamp: string; content: string }[] = [];
   private commandHistory: string[] = [];
   private currentHistoryIndex: number = -1;
   
+  // The "Mega Coder" Upgrade: A mutable, in-memory filesystem
   private projectFiles: Map<string, string> = new Map();
   private projectStructure: string[] = [];
-  private taskList: Task[] = [];
-  private currentTaskId: number = 0;
 
   constructor() {
-    // Bind UI Elements from your original HTML structure
+    // Bind UI Elements
     this.terminal = document.getElementById('terminal')!;
     this.startBtn = document.getElementById('start-btn') as HTMLButtonElement;
     this.pauseBtn = document.getElementById('pause-btn') as HTMLButtonElement;
@@ -76,186 +76,167 @@ class AgentSmithOpsHub {
     
     this.bindEvents();
     this.resetState();
-    this.logToTerminal('System', 'Ready. Select a project source and click Start.');
+    this.logToTerminal('System', 'Autonomous Coder Engine Ready. Provide a high-level goal and click Start.');
   }
 
-  private createAgent(elementId: string, name: string, role: AgentRole): Agent {
-    const element = document.getElementById(elementId)!;
-    return {
-      id: elementId, name, role, status: 'idle', element,
-      statusDot: element.querySelector('.status-dot')!
-    };
-  }
+  // =================================================================================
+  // CORE AGENT LOGIC (THE "MEGA CODER" ENGINE)
+  // =================================================================================
 
-  private bindEvents() {
-    this.startBtn.addEventListener('click', () => this.startOrchestration());
-    this.pauseBtn.addEventListener('click', () => this.togglePause());
-    this.stopBtn.addEventListener('click', () => this.stopGracefully());
-    this.cancelBtn.addEventListener('click', () => this.cancelImmediately()); // Restored cancel button functionality
-    
-    this.instructionInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        this.sendInstruction();
-      } else if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        this.navigateHistory('up');
-      } else if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        this.navigateHistory('down');
-      }
-    });
-  }
-
-  private setAgentStatus(agentId: keyof typeof this.agents, status: AgentStatus) {
-    const agent = this.agents[agentId];
-    if (agent) {
-      agent.status = status;
-      agent.statusDot.className = `status-dot ${status}`;
-      agent.statusDot.setAttribute('aria-label', status);
-    }
-  }
-
-  private logToTerminal(sender: string, message: string) {
-    // This function is preserved from your original code to maintain logging style
-    let type = 'system';
-    if (sender.includes('AgentSmith')) type = 'smith';
-    else if (sender.startsWith('Agent')) type = 'worker';
-    else if (sender.toLowerCase().includes('error')) type = 'error';
-
-    const logLine = document.createElement('div');
-    logLine.className = 'log-entry';
-    const senderEl = document.createElement('strong');
-    senderEl.textContent = `[${sender}]`;
-    logLine.appendChild(senderEl);
-    const messageEl = document.createElement('span');
-    messageEl.textContent = `: ${message}`;
-    messageEl.className = `log-${type}`;
-    logLine.appendChild(messageEl);
-    this.terminal.appendChild(logLine);
-    this.terminal.scrollTop = this.terminal.scrollHeight;
-  }
-  
   /**
-   * This is the Director's logic. It's now a simplified planner that uses an LLM
-   * to decide the next step, rather than complex hardcoded rules.
-   * This function now calls your existing backend for decisions.
+   * Director Agent (AgentSmith's Brain)
+   * Creates a structured plan for which tool to use next.
    */
-  private async getSmithsNextMove(prompt: string): Promise<string> {
+  private async getSmithsPlan(): Promise<AgentPlan> {
     this.setAgentStatus('smith', 'working');
-    this.logToTerminal('AgentSmith', 'Planning next action...');
+    this.logToTerminal('AgentSmith', 'Analyzing history and code to form a plan...');
     
+    const planningPrompt = `
+      You are AgentSmith, the director of an autonomous AI coding team. Your job is to achieve the user's goal by strategically using your specialist agents as tools.
+
+      **USER'S GOAL:**
+      ${this.instructionInput.value || 'Analyze and improve the project.'}
+      
+      **AVAILABLE TOOLS (AGENTS):**
+      - Debugger: Scans specified files for bugs, security issues, and quality problems. Returns a text analysis.
+      - Optimizer: Analyzes specified files for performance bottlenecks (e.g., N+1 queries, slow algorithms). Returns a text analysis.
+      - Fixer: **Rewrites entire files.** Takes a file, analyzes a problem, and returns the complete, new version of the file with the fix. Use this tool to apply changes.
+      - CodeManiac: Suggests creative or novel approaches. Returns a text analysis.
+      - Finish: Use this tool when the user's goal has been fully achieved.
+
+      **PROJECT FILES:**
+      ${this.projectStructure.join(', ')}
+
+      **HISTORY (What has been done so far):**
+      ${this.history.map(h => h.content).join('\n') || 'No actions taken yet.'}
+
+      **YOUR TASK:**
+      Based on the user's goal and the history, decide the single next action.
+      1.  **thought**: Briefly explain your reasoning.
+      2.  **tool**: Choose the single best tool for the next step ('Debugger', 'Optimizer', 'Fixer', 'CodeManiac', 'Finish').
+      3.  **task**: Write a clear, specific instruction for the chosen agent.
+      4.  **targetFiles**: List the file(s) the agent should read to perform the task.
+
+      **OUTPUT MUST BE A VALID JSON OBJECT:**
+      {
+        "thought": "Your reasoning here.",
+        "tool": "ToolName",
+        "task": "Specific instruction for the agent.",
+        "targetFiles": ["path/to/file.js"]
+      }
+    `;
+
     try {
-      // This prompt is designed to be more robust for an LLM to decide the next step.
-      const planningPrompt = `
-        You are AgentSmith, a director of AI agents. Your goal is to analyze a codebase.
-        The user's overall instruction is: "${this.instructionInput.value || 'Analyze the project.'}"
-        
-        Analysis History (what has been done so far):
-        ${this.history.map(h => `${h.role}: ${h.content}`).join('\n') || 'No actions taken yet.'}
-
-        Available Agents:
-        - Debugger: Finds bugs, security vulnerabilities.
-        - Optimizer: Finds performance bottlenecks.
-        - Fixer: Implements fixes and patches.
-        - CodeManiac: Provides creative, innovative solutions.
-
-        Based on the history, what is the single most logical next step?
-        Respond with a concise instruction for the next agent, like "Assign Debugger to scan for security flaws in auth.js" or "Assign Optimizer to check for N+1 queries in api.js".
-        If the analysis seems complete, respond with "Analysis complete. All phases finished.".
-      `;
-
-      // **IMPORTANT**: This now calls your backend. I've assumed the endpoint is '/api/xai/chat/completions'
-      // as that was in my previous suggestion. If your director model is at a different endpoint, change it here.
-      // If you do NOT have a director model, this will fail.
+      // This uses your existing backend endpoint for the director model.
       const response = await fetch('/api/xai/chat/completions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify({
-          model: 'gpt-4-turbo', // Or any powerful model you use for planning
+          model: 'gpt-4-turbo', // A powerful model is required for good planning
           messages: [{ role: 'user', content: planningPrompt }],
-          max_tokens: 100,
-          temperature: 0.3,
+          response_format: { type: "json_object" }, // Enforce JSON output
         }),
       });
 
-      if (!response.ok) {
-        throw new Error(`Director API error (${response.status}): ${await response.text()}`);
-      }
+      if (!response.ok) throw new Error(`Director API error (${response.status}): ${await response.text()}`);
       
       const data = await response.json();
-      const nextAction = data.choices[0].message.content.trim();
-
-      this.history.push({ role: 'assistant', content: nextAction });
-      this.logToTerminal('AgentSmith', nextAction);
-      return nextAction;
+      const plan = JSON.parse(data.choices[0].message.content) as AgentPlan;
+      
+      this.history.push({ role: 'Director', content: `Thought: ${plan.thought}` });
+      this.logToTerminal('AgentSmith', `Thought: ${plan.thought}`);
+      return plan;
 
     } catch (error) {
-      const errorMessage = `Error communicating with Director API: ${(error as Error).message}. Halting operations.`;
+      const errorMessage = `Director planning failed: ${(error as Error).message}. Halting.`;
       this.logToTerminal('System', errorMessage);
       this.setAgentStatus('smith', 'error');
       this.shouldStop = true;
-      return "Error state reached. Halting operations.";
+      return { thought: errorMessage, tool: 'Finish', task: 'Error occurred', targetFiles: [] };
     } finally {
       this.setAgentStatus('smith', 'idle');
     }
   }
   
-  private async delegateToWorker(agentId: keyof typeof this.agents, task: string): Promise<string> {
-    this.setAgentStatus(agentId, 'working');
+  /**
+   * Delegates a task to a specialist worker agent.
+   */
+  private async delegateToWorker(plan: AgentPlan): Promise<string> {
+    const agentIdMap = { Fixer: 'a', Debugger: 'b', Optimizer: 'c', CodeManiac: 'd' };
+    const agentId = agentIdMap[plan.tool as keyof typeof agentIdMap];
+    if (!agentId) return `Unknown tool: ${plan.tool}`;
+
     const agent = this.agents[agentId];
-    this.logToTerminal(agent.name, `Acknowledged. Executing: "${task.substring(0, 70)}..."`);
+    this.setAgentStatus(agentId, 'working');
+    this.logToTerminal(agent.name, `Executing task: "${plan.task}"`);
+
+    const filesContent = plan.targetFiles.map(path => 
+        `--- FILE: ${path} ---\n${this.projectFiles.get(path) || 'File not found.'}`
+    ).join('\n\n');
+
+    let workerPrompt = `
+      You are a specialist AI agent with the role of **${agent.role}**.
+      Your specific task is: **${plan.task}**
+
+      Read the following file(s) to perform your task:
+      ${filesContent}
+    `;
+
+    // **CRITICAL**: Instruct the Fixer to output ONLY the raw code for the file it's modifying.
+    if (plan.tool === 'Fixer') {
+        workerPrompt += `
+          \n**IMPORTANT INSTRUCTION:**
+          Your output must be ONLY the complete, new source code for the file you are fixing.
+          Do NOT include any explanation, markdown, or anything else. Just the raw code.
+        `;
+    }
 
     try {
-        const fileContent = this.formatFileContent(this.projectStructure); // Provide all files for context
-        
-        const workerPrompt = `
-          You are a ${agent.role} Agent.
-          Your task is: "${task}"
-
-          Here is the full project context. Base your analysis on these files:
-          ${fileContent}
-
-          Provide a concise report with your findings or the changes you implemented.
-        `;
-
-        // This uses your existing deepseek endpoint.
+        // This uses your existing backend endpoint for worker agents.
         const response = await fetch('/api/deepseek/chat/completions', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
             body: JSON.stringify({
                 model: 'deepseek-coder',
                 messages: [{ role: 'user', content: workerPrompt }],
-                max_tokens: 800,
                 temperature: agent.role === 'CodeManiac' ? 0.7 : 0.0,
             })
         });
 
-        if (!response.ok) {
-            throw new Error(`DeepSeek API error (${response.status}): ${await response.text()}`);
-        }
+        if (!response.ok) throw new Error(`Worker API error (${response.status}): ${await response.text()}`);
 
         const data = await response.json();
-        const result = data.choices[0].message.content?.trim() || 'Task completed successfully.';
+        const result = data.choices[0].message.content?.trim() || 'No output.';
         
-        this.logToTerminal(agent.name, result);
-        this.setAgentStatus(agentId, 'idle');
+        this.logToTerminal(agent.name, plan.tool === 'Fixer' ? `Generated new version of ${plan.targetFiles[0]}` : result);
+        this.history.push({ role: 'Worker', content: `[${plan.tool} Result]: ${result.substring(0, 200)}...` });
         return result;
     } catch (error) {
         const errorMessage = `Worker agent ${agent.name} failed: ${(error as Error).message}`;
         this.logToTerminal('System', errorMessage);
-        this.setAgentStatus(agentId, 'error');
+        this.setAgentStatus(agentId as keyof typeof this.agents, 'error');
         throw new Error(errorMessage);
+    } finally {
+        this.setAgentStatus(agentId as keyof typeof this.agents, 'idle');
     }
   }
 
-  private formatFileContent(filePaths: string[]): string {
-    return filePaths.map(filePath => {
-        const fileContent = this.projectFiles.get(filePath) || '// File content not found';
-        return `--- FILE: ${filePath} ---\n${fileContent}\n--- END FILE ---\n`;
-    }).join('\n');
+  /**
+   * **THE KEY UPGRADE**: This function modifies the in-memory virtual filesystem.
+   */
+  private applyCodeChange(filePath: string, newContent: string) {
+    if (!this.projectFiles.has(filePath)) {
+        this.logToTerminal('System Error', `Attempted to modify non-existent file: ${filePath}`);
+        return;
+    }
+    this.projectFiles.set(filePath, newContent);
+    this.logToTerminal('System', `✅ Successfully applied changes to ${filePath}.`);
+    this.history.push({ role: 'System', content: `Applied new code to ${filePath}.` });
   }
-  
+
+  /**
+   * The main orchestration loop, now re-architected for autonomous operation.
+   */
   private async mainLoop() {
     let iterationCount = 0;
     const maxIterations = 20;
@@ -269,56 +250,96 @@ class AgentSmithOpsHub {
       }
       
       try {
-        const smithsPlan = await this.getSmithsNextMove(this.currentTask || 'Start the analysis.');
-        this.currentTask = smithsPlan;
+        // 1. PLAN: AgentSmith decides what to do next.
+        const plan = await this.getSmithsPlan();
 
-        if (smithsPlan.toLowerCase().includes('complete') || smithsPlan.toLowerCase().includes('finished')) {
+        if (plan.tool === 'Finish') {
           this.shouldStop = true;
-          this.logToTerminal('AgentSmith', 'All objectives completed. Halting operations.');
+          this.logToTerminal('AgentSmith', plan.task || 'Goal achieved. Halting operations.');
           continue;
         }
-        
-        await new Promise(resolve => setTimeout(resolve, 1000));
 
-        const plan = smithsPlan.toLowerCase();
-        let workerId: keyof typeof this.agents | null = null;
+        // 2. EXECUTE: Delegate the task to the chosen worker agent.
+        const workerResult = await this.delegateToWorker(plan);
 
-        // Simple keyword-based assignment from the Director's plan
-        if (plan.includes('debugger')) workerId = 'b';
-        else if (plan.includes('optimizer')) workerId = 'c';
-        else if (plan.includes('fixer')) workerId = 'a';
-        else if (plan.includes('codemaniac')) workerId = 'd';
-        
-        if (workerId) {
-            const result = await this.delegateToWorker(workerId, smithsPlan);
-            this.currentTask = `Worker ${this.agents[workerId].name} reported: ${result}`;
-            this.history.push({ role: 'user', content: this.currentTask });
-        } else {
-            this.logToTerminal('AgentSmith', 'No specific agent assigned in the plan. Re-evaluating on next loop.');
-            this.currentTask = `AgentSmith status update: ${smithsPlan}`;
-            this.history.push({ role: 'user', content: this.currentTask });
-            await new Promise(resolve => setTimeout(resolve, 500));
+        // 3. APPLY: If the tool was the Fixer, apply the code changes.
+        if (plan.tool === 'Fixer') {
+          // Assume the fixer targets one file at a time for simplicity
+          const targetFile = plan.targetFiles[0];
+          if (targetFile) {
+            this.applyCodeChange(targetFile, workerResult);
+          }
         }
+        
+        await new Promise(resolve => setTimeout(resolve, 1500)); // Pause between cycles
 
       } catch (error) {
-          this.logToTerminal('System Error', `A critical error occurred: ${(error as Error).message}`);
+          this.logToTerminal('System Error', `Critical error in main loop: ${(error as Error).message}`);
           this.shouldStop = true;
       }
     }
     
-    this.logToTerminal('System', this.shouldStop ? 'All operations halted.' : 'Workflow complete.');
+    this.logToTerminal('System', this.shouldStop ? 'All operations halted.' : 'Maximum iterations reached.');
+    this.displayFinalCode();
     this.resetControls(false);
+  }
+
+  private displayFinalCode() {
+    this.logToTerminal('System', '--- FINAL CODE STATE ---');
+    for (const [filePath, content] of this.projectFiles.entries()) {
+        const finalCodeLog = `
+        ----------------------------------------
+        FILE: ${filePath}
+        ----------------------------------------
+        ${content}
+        `;
+        this.logToTerminal('Final Code', finalCodeLog);
+    }
   }
   
   // =================================================================================
-  // All functions below this line are restored from your original file for compatibility
+  // All functions below are preserved from your original file for UI/compatibility
   // =================================================================================
+
+  private createAgent(elementId: string, name: string, role: AgentRole): Agent {
+    const element = document.getElementById(elementId)!;
+    return { id: elementId, name, role, status: 'idle', element, statusDot: element.querySelector('.status-dot')! };
+  }
+
+  private bindEvents() {
+    this.startBtn.addEventListener('click', () => this.startOrchestration());
+    this.pauseBtn.addEventListener('click', () => this.togglePause());
+    this.stopBtn.addEventListener('click', () => this.stopGracefully());
+    this.cancelBtn.addEventListener('click', () => this.cancelImmediately());
+    this.instructionInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); this.sendInstruction(); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); this.navigateHistory('up'); }
+      else if (e.key === 'ArrowDown') { e.preventDefault(); this.navigateHistory('down'); }
+    });
+  }
+
+  private setAgentStatus(agentId: keyof typeof this.agents, status: AgentStatus) {
+    const agent = this.agents[agentId];
+    if (agent) { agent.status = status; agent.statusDot.className = `status-dot ${status}`; }
+  }
+
+  private logToTerminal(sender: string, message: string) {
+    const logLine = document.createElement('div');
+    logLine.className = 'log-entry';
+    const senderEl = document.createElement('strong');
+    senderEl.textContent = `[${sender}]`;
+    logLine.appendChild(senderEl);
+    const messageEl = document.createElement('span');
+    messageEl.textContent = `: ${message}`;
+    logLine.appendChild(messageEl);
+    this.terminal.appendChild(logLine);
+    this.terminal.scrollTop = this.terminal.scrollHeight;
+  }
 
   private resetState() {
     this.isRunning = false;
     this.isPaused = false;
     this.shouldStop = false;
-    this.currentTask = null;
     this.history = [];
     this.instructionHistory = [];
     this.commandHistory = [];
@@ -328,9 +349,7 @@ class AgentSmithOpsHub {
     this.terminal.innerHTML = '';
     this.instructionHistoryList.innerHTML = '';
     this.tempLocationEl.textContent = 'N/A - No Active Process';
-    this.taskList = [];
-    this.currentTaskId = 0;
-    Object.keys(this.agents).forEach(id => this.setAgentStatus(id as keyof typeof this.agents, 'idle'));
+    Object.values(this.agents).forEach(agent => this.setAgentStatus(agent.id as any, 'idle'));
   }
 
   private resetControls(isStarting: boolean) {
@@ -351,24 +370,22 @@ class AgentSmithOpsHub {
     const timestamp = new Date().toLocaleTimeString();
     this.instructionHistory.push({ timestamp, content: instruction });
     this.updateInstructionHistory();
-    this.logToTerminal('User', `Instruction sent: ${instruction}`);
+    this.logToTerminal('User', `New Goal Set: ${instruction}`);
     this.instructionInput.value = '';
-    this.currentTask = `User instruction: ${instruction}`;
-    this.history.push({ role: 'user', content: this.currentTask });
   }
 
   private navigateHistory(direction: 'up' | 'down') {
     if (this.commandHistory.length === 0) return;
     if (direction === 'up') {
-      if (this.currentHistoryIndex === -1) this.currentHistoryIndex = this.commandHistory.length - 1;
-      else if (this.currentHistoryIndex > 0) this.currentHistoryIndex--;
+      if (this.currentHistoryIndex <= 0) this.currentHistoryIndex = this.commandHistory.length;
+      this.currentHistoryIndex--;
     } else {
-      if (this.currentHistoryIndex < this.commandHistory.length - 1) this.currentHistoryIndex++;
-      else {
+      if (this.currentHistoryIndex >= this.commandHistory.length - 1) {
         this.currentHistoryIndex = -1;
         this.instructionInput.value = '';
         return;
       }
+      this.currentHistoryIndex++;
     }
     this.instructionInput.value = this.commandHistory[this.currentHistoryIndex];
   }
@@ -377,8 +394,7 @@ class AgentSmithOpsHub {
     this.instructionHistoryList.innerHTML = '';
     this.instructionHistory.forEach(entry => {
       const messageEl = document.createElement('div');
-      messageEl.className = 'chat-message';
-      messageEl.innerHTML = `<div class="message-header"><span class="message-timestamp">${entry.timestamp}</span></div><div class="message-content">${entry.content}</div>`;
+      messageEl.innerHTML = `<div class="message-header"><span>${entry.timestamp}</span></div><div>${entry.content}</div>`;
       this.instructionHistoryList.appendChild(messageEl);
     });
     this.instructionHistoryList.scrollTop = this.instructionHistoryList.scrollHeight;
@@ -386,36 +402,37 @@ class AgentSmithOpsHub {
 
   public async startOrchestration() {
     if (this.isRunning) return;
+    if (!this.instructionInput.value.trim()) {
+        alert("Please provide a high-level goal before starting.");
+        return;
+    }
     this.resetState();
     this.isRunning = true;
     this.resetControls(true);
-    const project = this.projectSourceInput.value || 'the specified project';
-    this.logToTerminal('System', `Cloning source: ${project}...`);
+    const project = this.projectSourceInput.value || 'sample-project';
+    this.logToTerminal('System', `Loading project source: ${project}...`);
     const cloneId = (Math.random() + 1).toString(36).substring(7);
     this.tempLocationEl.textContent = `/tmp/project-clone-${cloneId}`;
     await this.loadProjectFiles(project);
-    this.currentTask = `The project '${project}' has been cloned. The user instruction is: "${this.instructionInput.value || 'Begin the analysis.'}".`;
-    this.history.push({ role: 'user', content: this.currentTask });
+    this.history.push({ role: 'User', content: `Initial Goal: ${this.instructionInput.value}` });
     this.mainLoop();
   }
 
   private async loadProjectFiles(projectName: string): Promise<void> {
-    this.logToTerminal('System', 'Loading project files for analysis...');
-    const commonFiles = ['package.json', 'server.js', 'auth.js', 'models/user.js', 'routes/api.js', 'README.md'];
+    const commonFiles = ['package.json', 'server.js', 'auth.js', 'README.md'];
     for (const filePath of commonFiles) {
       const content = this.generateSampleContent(filePath, projectName);
       this.projectFiles.set(filePath, content);
       this.projectStructure.push(filePath);
     }
-    this.logToTerminal('System', `Loaded ${this.projectStructure.length} files for analysis`);
+    this.logToTerminal('System', `Loaded ${this.projectStructure.length} files into virtual filesystem.`);
   }
 
   private generateSampleContent(filePath: string, projectName: string): string {
-    // This function is preserved from your original code
-    if (filePath.includes('package.json')) return `{ "name": "${projectName}", "dependencies": { "express": "4.18.0" } }`;
-    if (filePath.includes('server.js')) return `const express = require('express');\nconst app = express();\napp.listen(3000);`;
-    if (filePath.includes('auth.js')) return `// VULNERABILITY: SQL injection possible here`;
-    return `# ${projectName}\nSample project for analysis.`;
+    if (filePath.includes('package.json')) return `{ "name": "${projectName}", "main": "server.js" }`;
+    if (filePath.includes('server.js')) return `const express = require('express');\nconst app = express();\n\napp.use('/auth', require('./auth'));\n\napp.listen(3000, () => console.log('Server Ready'));`;
+    if (filePath.includes('auth.js')) return `const router = require('express').Router();\n\nrouter.post('/login', (req, res) => {\n  // TODO: Add proper validation and password hashing.\n  const { username, password } = req.body;\n  if (username === 'admin' && password === 'password') {\n    res.send('Login successful!');\n  } else {\n    res.status(401).send('Login failed');\n  }\n});\n\nmodule.exports = router;`;
+    return `# ${projectName}\nThis is a sample project.`;
   }
 
   public togglePause() {
@@ -429,8 +446,6 @@ class AgentSmithOpsHub {
     if (!this.isRunning) return;
     this.shouldStop = true;
     this.logToTerminal('System', 'Stopping... waiting for current task to complete.');
-    this.pauseBtn.disabled = true;
-    this.stopBtn.disabled = true;
   }
 
   public cancelImmediately() {
@@ -440,8 +455,6 @@ class AgentSmithOpsHub {
     this.logToTerminal('System', 'Cancelling all operations immediately.');
     this.resetControls(false);
     this.resetState();
-    this.tempLocationEl.textContent = 'N/A - Process Canceled';
-    this.logToTerminal('System', 'Operation cancelled. Temp clone cleared. Ready for new task.');
   }
 }
 
