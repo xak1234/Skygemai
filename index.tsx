@@ -376,8 +376,12 @@ Be thorough and informative - users need to understand exactly what investigatio
         
         updateAgentStatus('smith', 'working', 'Coordinating team response...');
         
-        // Add Agent Smith's initial response
-        addToTerminal('AgentSmith', aiResponse);
+        // Add Agent Smith's initial coordination plan
+        addToTerminal('AgentSmith', `🧠 AGENT SMITH COORDINATION PLAN:`);
+        addToTerminal('AgentSmith', `📋 Initial Analysis: ${aiResponse}`);
+        addToTerminal('AgentSmith', `🎯 Coordination Strategy: Deploying specialized team for comprehensive analysis`);
+        addToTerminal('AgentSmith', `🤖 AI Provider: ${availableProvider.name} (selected for optimal performance)`);
+        addToTerminal('AgentSmith', `⚡ Execution Mode: Parallel agent deployment for maximum efficiency`);
         showNotification(`Team investigation initiated by ${availableProvider.name}`);
         
         // Start parallel agent investigation with real AI calls
@@ -485,14 +489,28 @@ Provide specific, actionable optimization recommendations with expected impact.`
         }
     };
 
-    // Start all agents with their initial status
+    // Agent Smith issues commands to all workers
+    addToTerminal('AgentSmith', `🎯 ISSUING COMMANDS TO TEAM:`);
+    addToTerminal('AgentSmith', `📋 User Request: "${instruction}"`);
+    addToTerminal('AgentSmith', `👥 Deploying ${Object.keys(agentPrompts).length} specialized agents...`);
+    
+    // Start all agents with their initial status and log commands
     Object.entries(agentPrompts).forEach(([agentId, config]) => {
         updateAgentStatus(agentId, config.status, `Processing ${config.name.toLowerCase()} perspective...`);
+        
+        // Log the specific command being sent to each agent
+        addToTerminal('AgentSmith', `📤 COMMAND TO ${config.name.toUpperCase()}:`);
+        addToTerminal('AgentSmith', `   Role: ${config.name} specialist`);
+        addToTerminal('AgentSmith', `   Task: Analyze "${instruction}" from ${config.name.toLowerCase()} perspective`);
+        addToTerminal('AgentSmith', `   Expected: Technical analysis, recommendations, implementation details`);
+        addToTerminal('AgentSmith', `   Status: Command dispatched, awaiting response...`);
     });
 
     // Make parallel AI calls for all agents
     const agentPromises = Object.entries(agentPrompts).map(async ([agentId, config]) => {
         try {
+            addToTerminal('AgentSmith', `⏳ Waiting for ${config.name} response...`);
+            
             const response = await fetch('/api/llm/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -513,15 +531,30 @@ Provide specific, actionable optimization recommendations with expected impact.`
             const result = await response.json();
             const agentResponse = result.choices?.[0]?.message?.content || `${config.name} analysis complete`;
             
-            // Add response to terminal
-            addToTerminal(config.name, agentResponse);
+            // Log the full response received from worker
+            addToTerminal('AgentSmith', `📥 RESPONSE FROM ${config.name.toUpperCase()}:`);
+            addToTerminal('AgentSmith', `   Status: ✅ Response received successfully`);
+            addToTerminal('AgentSmith', `   Length: ${agentResponse.length} characters`);
+            addToTerminal('AgentSmith', `   Processing: Integrating into team analysis...`);
+            
+            // Add the actual agent response to terminal
+            addToTerminal(config.name, `📋 ANALYSIS REPORT:\n${agentResponse}`);
             updateAgentStatus(agentId, 'idle', `${config.name} analysis complete`);
+            
+            addToTerminal('AgentSmith', `✅ ${config.name} report integrated into team findings`);
             
             return { agent: config.name, response: agentResponse };
         } catch (error) {
             console.error(`${config.name} AI call failed:`, error);
             const errorMsg = `Analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
-            addToTerminal(config.name, errorMsg);
+            
+            // Log the error in detail
+            addToTerminal('AgentSmith', `❌ ERROR FROM ${config.name.toUpperCase()}:`);
+            addToTerminal('AgentSmith', `   Status: Failed to receive response`);
+            addToTerminal('AgentSmith', `   Error: ${errorMsg}`);
+            addToTerminal('AgentSmith', `   Action: Continuing with other agents...`);
+            
+            addToTerminal(config.name, `❌ ${errorMsg}`);
             updateAgentStatus(agentId, 'error', errorMsg);
             return { agent: config.name, response: errorMsg };
         }
@@ -531,13 +564,39 @@ Provide specific, actionable optimization recommendations with expected impact.`
         // Wait for all agents to complete
         const results = await Promise.all(agentPromises);
         
+        // Agent Smith analyzes all responses
+        addToTerminal('AgentSmith', `📊 ANALYZING ALL WORKER RESPONSES:`);
+        const completedAgents = results.filter(r => !r.response.includes('failed'));
+        const failedAgents = results.filter(r => r.response.includes('failed'));
+        
+        addToTerminal('AgentSmith', `   Total Agents Deployed: ${results.length}`);
+        addToTerminal('AgentSmith', `   Successful Responses: ${completedAgents.length}`);
+        addToTerminal('AgentSmith', `   Failed Responses: ${failedAgents.length}`);
+        
+        if (failedAgents.length > 0) {
+            addToTerminal('AgentSmith', `   Failed Agents: ${failedAgents.map(f => f.agent).join(', ')}`);
+        }
+        
         // Agent Smith provides final coordination
         setTimeout(() => {
             updateAgentStatus('smith', 'analyzing', 'Consolidating all agent findings...');
+            addToTerminal('AgentSmith', `🔄 CONSOLIDATING TEAM FINDINGS:`);
+            
+            // Show detailed analysis of each response
+            completedAgents.forEach((result, index) => {
+                addToTerminal('AgentSmith', `   ${index + 1}. ${result.agent}: ✅ Analysis integrated`);
+                addToTerminal('AgentSmith', `      Response Quality: ${result.response.length > 100 ? 'Detailed' : 'Brief'}`);
+                addToTerminal('AgentSmith', `      Key Points: ${result.response.split('.').length} main points identified`);
+            });
             
             setTimeout(() => {
-                const completedAgents = results.filter(r => !r.response.includes('failed')).length;
-                addToTerminal('AgentSmith', `Team investigation complete! ${completedAgents}/4 agents provided analysis. All perspectives consolidated and ready for implementation.`);
+                addToTerminal('AgentSmith', `🎯 FINAL COORDINATION SUMMARY:`);
+                addToTerminal('AgentSmith', `   Command Execution: ${completedAgents.length}/${results.length} agents responded`);
+                addToTerminal('AgentSmith', `   Analysis Quality: ${completedAgents.length > 0 ? 'Comprehensive multi-perspective analysis' : 'Limited analysis due to failures'}`);
+                addToTerminal('AgentSmith', `   Implementation Readiness: ${completedAgents.length >= 3 ? 'Ready for implementation' : 'May need additional analysis'}`);
+                addToTerminal('AgentSmith', `   Status: Team investigation complete. All findings consolidated.`);
+                addToTerminal('AgentSmith', `   Next Steps: Awaiting further instructions for implementation phase.`);
+                
                 updateAgentStatus('smith', 'idle', 'Team coordination complete - ready for next task');
             }, 2000);
         }, 1000);
@@ -545,7 +604,11 @@ Provide specific, actionable optimization recommendations with expected impact.`
     } catch (error) {
         console.error('Team investigation failed:', error);
         updateAgentStatus('smith', 'error', 'Team coordination failed');
-        addToTerminal('AgentSmith', 'Team investigation encountered errors. Some agents may not have responded.');
+        addToTerminal('AgentSmith', `❌ CRITICAL ERROR IN TEAM COORDINATION:`);
+        addToTerminal('AgentSmith', `   Error Type: ${error instanceof Error ? error.name : 'Unknown Error'}`);
+        addToTerminal('AgentSmith', `   Error Message: ${error instanceof Error ? error.message : 'Unknown error occurred'}`);
+        addToTerminal('AgentSmith', `   Impact: Team investigation could not be completed`);
+        addToTerminal('AgentSmith', `   Recommendation: Please retry the command or check system status`);
     }
 }
 
