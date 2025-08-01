@@ -284,7 +284,7 @@ async function handleXAIRequest(req, res) {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                model: 'grok-beta',
+                model: 'grok-3-beta',
                 messages: req.body.messages,
                 temperature: req.body.temperature || 0.7,
                 max_tokens: req.body.max_tokens || 1000
@@ -357,7 +357,7 @@ async function handleClaudeRequest(req, res) {
                 'anthropic-version': '2023-06-01'
             },
             body: JSON.stringify({
-                model: 'claude-3-sonnet-20240229',
+                model: 'claude-3-5-sonnet-20241022',
                 max_tokens: req.body.max_tokens || 1000,
                 messages: req.body.messages,
                 temperature: req.body.temperature || 0.7
@@ -437,7 +437,7 @@ async function handleGeminiRequest(req, res) {
             parts: [{ text: msg.content }]
         }));
 
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${geminiApiKey}`, {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
