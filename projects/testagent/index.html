@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="en">
+   <head>
+      <meta name="robots" content="noindex, nofollow">
+
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Multiplayer</title>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+      
+   
+<style>
+body {
+             background-image: url('images/migrant3.jpg') !important;
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-position: center center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+         /*   background-attachment: fixed; */
+        }
+
+#develop-property-options button {
+    display: inline-block;
+    width: auto;
+    min-width: 120px;
+    margin: 4px;
+    padding: 6px 10px;
+    font-size: 13px;
+    background-color: #2980b9;
+    position: relative;
+}
+
+#develop-property-options button:hover {
+    background-color: #3498db;
+}
+
+#develop-property-options button .property-count {
+    position: absolute;
+    right: -8px;
+    top: -8px;
+    background: #e74c3c;
+    color: white;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #fff;
+}
+
+#develop-property-options .property-info {
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+#develop-property-options .property-info:last-child {
+    border-bottom: none;
+}
+
+/* Card Display Styling */
+#card-display-container, #on-board-card-display {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 300px;  /* Increased from 280px */
+    min-height: 200px;  /* Increased from 190px */
+    border-radius: 15px;
+    box-shadow: 0 6px 22px rgba(0,0,0,0.35);
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;  /* Changed from space-around to flex-start */
+    padding: 20px;  /* Increased from 15px */
+    box-sizing: border-box;
+    text-align: center;
+}
+
+#card-type-title, #on-board-card-type {
+    font-size: 18px;  /* Added explicit size for title */
+    font-weight: bold;
+    color: #ffffff;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+    margin: 0 0 8px 0;  /* Added margin for spacing */
+    text-align: center;
+    width: 100%;
+    padding: 8px 0;
+    letter-spacing: 0.5px;
+}
+
+#card-message, #on-board-card-text {
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;  /* Increased from 10px for better readability */
+    line-height: 1.4;
+    color: #000000;
+    padding: 12px;  /* Increased from 8px */
+    margin: 8px 0;  /* Increased from 4px */
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 8px;
+    width: calc(100% - 24px);  /* Adjusted for new padding */
+    text-shadow: none;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    font-weight: 500;
+    letter-spacing: 0.2px;
+}
+
+#card-ok-button, #on-board-card-ok-button {
+    background: #2ecc71;
+    color: white;
+    border: none;
+    padding: 8px 20px;  /* Increased padding */
+    border-radius: 12px;
+    font-size: 14px;  /* Increased from 12px */
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 12px;  /* Increased from 6px */
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    font-weight: bold;
+}
+
+#card-ok-button:hover, #on-board-card-ok-button:hover {
+    background: #27ae60;
+    transform: scale(1.05);
+}
+
+/* Card type-specific styling */
+#card-display-container[data-card-type="Welfare"],
+#on-board-card-display[data-card-type="Welfare"] {
+    background: linear-gradient(45deg, #f1c40f 0%, #f7ca18 100%);
+    border: 2px solid rgba(241, 196, 15, 0.5);
+}
+
+#card-display-container[data-card-type="Opportunity"],
+#on-board-card-display[data-card-type="Opportunity"] {
+    background: linear-gradient(45deg, #3498db 0%, #2980b9 100%);
+    border: 2px solid rgba(52, 152, 219, 0.5);
+}
+
+/* Card corner decorations */
+#card-display-container::before,
+#card-display-container::after,
+#on-board-card-display::before,
+#on-board-card-display::after {
+    content: '♦';
+    position: absolute;
+    font-size: 16px;  /* Increased from 14px */
+    color: rgba(255, 255, 255, 0.8);
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+}
+
+#card-display-container::before,
+#on-board-card-display::before {
+    top: 12px;  /* Increased from 8px */
+    left: 12px;  /* Increased from 8px */
+}
+
+#card-display-container::after,
+#on-board-card-display::after {
+    bottom: 12px;  /* Increased from 8px */
+    right: 12px;  /* Increased from 8px */
+    transform: rotate(180deg);
+}
+
+/* Card content container */
+.card-content {
+    width: 100%;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 12px 0;  /* Added margin */
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 10px;
+    padding: 16px;
+    box-shadow: inset 0 2px 5px rgba(0,0,0,0.1);
+}
+
+/* Card type icons */
+#card-type-title::before,
+#on-board-card-type::before {
+    font-family: "Font Awesome 5 Free";
+    margin-right: 10px;
+}
+
+[data-card-type="Welfare"] #card-type-title::before,
+[data-card-type="Welfare"] #on-board-card-type::before {
+    content: "\f4c4"; /* Money bill icon */
+    color: #f1c40f;
+}
+
+[data-card-type="Opportunity"] #card-type-title::before,
+[data-card-type="Opportunity"] #on-board-card-type::before {
+    content: "\f091"; /* Trophy icon */
+    color: #3498db;
+}
+
+/* Card border effects */
+#card-display-container,
+#on-board-card-display {
+    border: 1px solid rgba(255,255,255,0.2);
+    background-clip: padding-box;
+    -webkit-backdrop-filter: blur(5px);
+    backdrop-filter: blur(5px);
+}
+
+/* Card hover effects */
+#card-display-container:hover .card-content,
+#on-board-card-display:hover .card-content {
+    transform: translateY(-2px);
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.card-content {
+    transition: all 0.3s ease;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    #card-display-container,
+    #on-board-card-display {
+        width: 200px;
+        height: 280px;
+    }
+    
+    #card-type-title,
+    #on-board-card-type {
+        font-size: 1.2em;
+    }
+    
+    #card-message,
+    #on-board-card-text {
+        font-size: 0.9em;
+    }
+}
+
+.die {
+    width: 30px;
+    height: 30px;
+    border: 1px solid #ecf0f1;
+    background-color: #fff;
+    color: var(--current-player-dice-color, #2c3e50);
+    font-size: 18px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    transition: all 0.3s ease;
+}
+
+.dice-animation {
+    animation: dice-roll-effect 0.4s ease-out;
+}
+
+@keyframes dice-roll-effect {
+    0% { 
+        transform: scale(1) rotate(0deg); 
+        opacity: 0.5;
+        box-shadow: 0 0 5px var(--current-player-dice-color, #fff);
+    }
+    25% { 
+        transform: scale(1.3) rotate(90deg); 
+        opacity: 0.75;
+        box-shadow: 0 0 10px var(--current-player-dice-color, #fff);
+    }
+    50% { 
+        transform: scale(1.1) rotate(180deg); 
+        opacity: 1;
+        box-shadow: 0 0 15px var(--current-player-dice-color, #fff);
+    }
+    75% { 
+        transform: scale(1.3) rotate(270deg); 
+        opacity: 0.75;
+        box-shadow: 0 0 10px var(--current-player-dice-color, #fff);
+    }
+    100% { 
+        transform: scale(1) rotate(360deg); 
+        opacity: 1;
+        box-shadow: 0 0 5px var(--current-player-dice-color, #fff);
+    }
+}
+
+#rent-flash {
+    position: fixed;
+    top: 60%; /* Slightly lower than money flash */
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 3.5vw; /* Made smaller */
+    font-family: 'Impact', 'Arial Black', Arial, sans-serif;
+    font-weight: bold;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 1000;
+    color: #ff3333; /* Red color */
+    text-shadow: 2px 2px 8px rgba(0,0,0,0.8);
+    transition: opacity 0.3s, transform 0.3s;
+    text-align: center;
+    padding: 8px;
+    border-radius: 8px;
+    background-color: rgba(44, 62, 80, 0.5); /* Slightly more transparent background */
+}
+
+#rent-flash span {
+    text-shadow: 3px 3px 10px rgba(0,0,0,0.9), 0 0 30px currentColor;
+}
+
+#rent-flash.show {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.1);
+    animation: rent-flash-pop 1.8s; /* Slightly longer display for rent text */
+}
+
+/* Update double tap styles */
+.tappable-card {
+    touch-action: none;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    -webkit-user-select: none;
+    position: relative;
+}
+
+.tappable-card.double-tap-active {
+    animation: cardTapHighlight 0.3s ease-out;
+}
+
+.tappable-card::after {
+    content: "Double tap to interact";
+    position: absolute;
+    bottom: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+.tappable-card:active::after {
+    opacity: 1;
+}
+
+@keyframes cardTapHighlight {
+    0% { transform: scale(1); box-shadow: 0 0 0 rgba(255, 255, 255, 0.5); }
+    50% { transform: scale(1.05); box-shadow: 0 0 20px rgba(255, 255, 255, 0.8); }
+    100% { transform: scale(1); box-shadow: 0 0 0 rgba(255, 255, 255, 0.5); }
+}
+
+</style>
+
+</head>
+   <body>
+      <div class="overlay"></div>
+      <div id="user-id-display">Your User ID: <span id="local-user-id">Not Signed In</span></div>
+
+      <!-- Login screen removed - no password required -->
+
+      <div class="main-content">
+         <div id="online-setup-screen" style="display:flex;">
+            <h2>Multiplayer</h2>
+            <div class="setup-row">
+               <label for="player-name-input">Your Name:</label>
+               <input type="text" id="player-name-input" placeholder="Enter your name" value="Player">
+            </div>
+            <div class="setup-row">
+               <label for="game-id-input">Game ID (for joining):</label>
+               <input type="text" id="game-id-input" placeholder="Enter Game ID to join">
+            </div>
+            <button id="join-game-button">Join Game</button>
+            <hr style="width:80%; margin: 20px 0; border-color: #7f8c8d;">
+            <div class="setup-row">
+               <label for="num-human-players-select">Human Players (You + Others):</label>
+               <select id="num-human-players-select">
+                  <option value="0">0 (AI Only)</option>
+                  <option value="1" selected>1 (Just You)</option>
+                  <option value="2">2 Humans</option>
+                  <option value="3">3 Humans</option>
+                  <option value="4">4 Humans</option>
+                  <option value="5">5 Humans</option>
+                  <option value="6">6 Humans</option>
+               </select>
+            </div>
+            <div class="setup-row">
+               <label for="num-ai-players-select">AI Players:</label>
+               <select id="num-ai-players-select">
+                  <option value="0" selected>0 AI</option>
+                  <option value="1">1 AI</option>
+                  <option value="2">2 AI</option>
+                  <option value="3">3 AI</option>
+                  <option value="4">4 AI</option>
+               </select>
+            </div>
+            <div class="setup-row">
+               <label for="difficulty-select">Difficulty:</label>
+               <select id="difficulty-select">
+                  <option value="1" selected>1</option>
+                  <option value="3">3</option>
+                  <option value="5">5</option>
+               </select>
+            </div>
+            <div class="setup-row">
+               <label for="doubles-mode-checkbox">Play Doubles (Teams of 2)</label>
+               <input type="checkbox" id="doubles-mode-checkbox">
+            </div>
+            <button id="create-game-button">Create New Game</button>
+            <p id="online-setup-message"></p>
+            <div id="game-id-display" style="display:none;">
+               Share this Game ID: <span id="generated-game-id" title="Click to copy"></span>
+            </div>
+         </div>
+         <div id="player-setup-screen" style="display: none;">
+            <h2>Player Setup (Local)</h2>
+         </div>
+         <div id="game-container" style="display: none;">
+            <div id="board-scroll-wrapper">
+               <div id="board-container">
+               </div>
+            </div>
+            <div id="game-info-area">
+               <div id="player-info">
+                  <!-- Auto-buy toggle will be moved below -->
+               </div>
+               <div id="controls" style="position: relative;">
+                  <div id="auto-buy-toggle" style="position: absolute; top: 5px; right: 5px; cursor: pointer; font-size: 16px; font-weight: bold; padding: 5px; border-radius: 4px; opacity: 0.7; transition: all 0.3s;">A</div>
+                  <h3 id="current-turn-display">Current Turn: Player 1</h3>
+                  <div id="pre-game-roll-area" style="display:none;">
+                     <h4>Determine Starting Player</h4>
+                     <button id="pre-game-roll-button">Roll to Start</button>
+                     <div id="pre-game-roll-results"></div>
+                  </div>
+                  <div id="dice-display-master-container">
+                     <span>Dice: </span>
+                     <div id="actual-dice-faces">
+                        <div class="die" id="die-face-1">--</div>
+                        <div class="die" id="die-face-2">--</div>
+                     </div>
+                     <span id="dice-total-display-text"></span>
+                  </div>
+                  <button id="roll-dice-button" style="display:none;" title="Roll Dice"><i class="fas fa-arrow-circle-right"></i></button>
+                  <button id="end-turn-button" style="display:none; background-color: #e74c3c; color: white;"><i class="fas fa-stop-circle"></i> End Turn</button>
+                  <div id="other-actions-container" style="text-align: center; margin-top: 5px;">
+                     <button id="develop-property-button" style="display:none;">
+                        <i class="fas fa-hotel hotel-icon"></i>
+                        <i class="fas fa-hotel hotel-icon"></i>
+                        <i class="fas fa-hotel hotel-icon"></i>
+                        Develop Property
+                    </button>
+                     <button id="buy-property-button" style="display:none;"><i class="fas fa-home"></i> BUY <span style="margin-left:4px;">£<span id="buy-property-price"></span></span></button>
+                  </div>
+                  <div id="detention-actions" style="margin-top: 10px;">
+                  </div>
+               </div>
+               <div id="develop-property-container" style="display:none;">
+                  <h3 id="develop-property-name">Develop Property</h3>
+                  <div id="develop-property-options">
+                  </div>
+                  <button id="close-develop-button">Close</button>
+               </div>
+               <div id="card-display-container" style="display:none;">
+                  <div class="card-inner">
+                     <h3 id="card-type-title">Card Drawn</h3>
+                     <div class="card-content">
+                        <p id="card-message"></p>
+                     </div>
+                  </div>
+                  <button id="card-ok-button">OK</button>
+               </div>
+               <div id="game-status-message-container">
+                  <h4 style="text-align: center; color: #00ff00; font-family: 'Courier New', monospace; margin-bottom: 0px; text-transform: uppercase; letter-spacing: 2px;">Game Status</h4>
+                  <div id="game-status-history" style="height: 80px; overflow-y: auto; margin-bottom: 5px; padding: 6px; background: #000000; border: 1px solid #00ff00; border-radius: 4px; font-size: 0.75em; font-family: 'Courier New', monospace; color: #00ff00;">
+                  </div>
+                  <p id="game-status-message" style="font-weight: bold; color: #00ff00; padding: 8px; background: #000000; border: 1px solid #00ff00; border-radius: 4px; margin: 0; font-family: 'Courier New', monospace; font-size: 0.85em;">Waiting for game to start...</p>
+               </div>
+               <div id="uk-gov-status-container">
+                  <div id="uk-gov-status">
+                     <span id="current-player-token-display"></span>
+                     <div id="owned-color-blocks"></div>
+                  </div>
+               </div>
+            </div>
+         </div>
+         <div id="money-flash"></div>
+         <div id="rent-flash"></div>
+         <div id="message-modal" class="modal">
+            <div class="modal-content">
+               <h3 id="modal-title">Notification</h3>
+               <p id="modal-message">This is a sample message.</p>
+               <button id="modal-ok-button">OK</button>
+            </div>
+         </div>
+      </div>
+
+      <!-- Compact chat UI -->
+      <div id="chat-container" class="minimized">
+         <div id="chat-header-toggle">Chat</div>
+         <div id="chat-inner-content">
+            <div id="chat-messages" style="overflow-y:auto; max-height:140px;"></div>
+            <form id="chat-form" style="display:flex;">
+               <input id="chat-input" type="text" placeholder="Type a message..." style="flex:1;" autocomplete="off" />
+               <button type="submit">Send</button>
+            </form>
+         </div>
+      </div>
+
+     <script src="game.js" type="module"></script>
+<script type="module">
+// --- Firebase SDKs ---
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, getDocs, deleteDoc, where, doc, updateDoc, runTransaction } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+// --- Your Firebase config ---
+const firebaseConfig = {
+    apiKey: "AIzaSyARzlfhH_AC0YTxJ5fKvhz_SPDq1r6mWPA",
+    authDomain: "migrantopoly.firebaseapp.com",
+    projectId: "migrantopoly",
+    storageBucket: "migrantopoly.firebasestorage.app",
+    messagingSenderId: "649348280586",
+    appId: "1:649348280586:web:2bd3be4d2de84c0ea8caf3",
+    measurementId: "G-1TMRSC6KL8"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+let userName = "Anon";
+let isInitialLoad = true;
+let messagesRef;
+let chatMessages;
+let chatForm;
+let chatInput;
+
+function initChat() {
+    // Initialize DOM elements
+    const nameInput = document.getElementById("player-name-input");
+    if (nameInput) {
+        userName = nameInput.value;
+        nameInput.addEventListener('input', () => userName = nameInput.value);
+    }
+
+    // Initialize chat elements
+    messagesRef = collection(db, "migrantopoly-chat");
+    chatMessages = document.getElementById('chat-messages');
+    chatForm = document.getElementById('chat-form');
+    chatInput = document.getElementById('chat-input');
+
+    // Initialize Firebase auth
+    signInAnonymously(auth).catch(console.error);
+
+    // Clear any previous chat messages on startup
+    clearChatMessages();
+
+    // Modify the original handleCreateGame and handleJoinGame functions to clear chat
+    const originalHandleCreateGame = window.handleCreateGame;
+    window.handleCreateGame = async function() {
+        await clearChatMessages();
+        const gameId = await originalHandleCreateGame.apply(this, arguments);
+        
+        // Add game ID to chat as a message from the creator
+        if (gameId) {
+            await addDoc(messagesRef, {
+                name: userName,
+                text: `I created a new game! Click to join with ID: <span class="copyable-game-id" style="color: #46e891; cursor: pointer;">${gameId}</span>`,
+                timestamp: serverTimestamp()
+            });
+        }
+        return gameId;
+    };
+
+    const originalHandleJoinGame = window.handleJoinGame;
+    window.handleJoinGame = async function() {
+        await clearChatMessages();
+        return originalHandleJoinGame.apply(this, arguments);
+    };
+
+    // Add click handler for game IDs in chat
+    if (chatMessages) {
+        chatMessages.addEventListener('click', (e) => {
+            if (e.target.classList.contains('copyable-game-id')) {
+                const gameId = e.target.textContent;
+                navigator.clipboard.writeText(gameId);
+                const gameIdInput = document.getElementById('game-id-input');
+                if (gameIdInput) gameIdInput.value = gameId;
+                e.target.style.color = '#ff9';
+                setTimeout(() => e.target.style.color = '#46e891', 200);
+            }
+        });
+    }
+
+    // Add enter key handler for joining games
+    const gameIdInput = document.getElementById('game-id-input');
+    if (gameIdInput) {
+        gameIdInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const joinButton = document.getElementById('join-game-button');
+                if (joinButton) joinButton.click();
+            }
+        });
+    }
+
+    // Set up chat message listener
+    onSnapshot(query(messagesRef, orderBy("timestamp", "asc")), (snapshot) => {
+        if (chatMessages) {
+            chatMessages.innerHTML = "";
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                const color = stringToColor(data.name || "Anon");
+                const msg = document.createElement("div");
+                msg.style.fontSize = "0.93em";
+                msg.style.lineHeight = "1.3";
+                // Allow HTML in system messages but escape user messages
+                if (data.name === "System") {
+                    msg.innerHTML = `<b style="color:${color}; font-weight:600;">${data.name}:</b> <span style="color:#d2e4fc;">${data.text}</span>`;
+                } else {
+                    const escapeHtml = (text) => {
+                        const div = document.createElement('div');
+                        div.textContent = text;
+                        return div.innerHTML;
+                    };
+                    msg.innerHTML = `<b style="color:${color}; font-weight:600;">${escapeHtml(data.name)}:</b> <span style="color:#d2e4fc;">${escapeHtml(data.text)}</span>`;
+                }
+                chatMessages.appendChild(msg);
+            });
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            if (!isInitialLoad) {
+                const chatContainer = document.getElementById('chat-container');
+                if (chatContainer && chatContainer.classList.contains('minimized')) {
+                    pingSound.play();
+                    chatContainer.classList.remove('minimized');
+                }
+                if (chatInput) chatInput.focus();
+            }
+            isInitialLoad = false;
+        }
+    });
+
+    // Set up chat form submission
+    if (chatForm) {
+        chatForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const text = chatInput.value.trim();
+            if (text) {
+                await addDoc(messagesRef, {
+                    name: userName,
+                    text,
+                    timestamp: serverTimestamp()
+                });
+                chatInput.value = '';
+            }
+        });
+    }
+}
+
+if (window.loginVerified) {
+    initChat();
+} else {
+    window.addEventListener('login-success', initChat, { once: true });
+}
+
+// Helper: hash name to pastel color
+function stringToColor(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const hue = hash % 360;
+    return `hsl(${hue}, 70%, 80%)`;
+}
+
+// Remove all chat messages from Firestore and UI
+async function clearChatMessages() {
+    if (!messagesRef) return;
+    const snap = await getDocs(messagesRef);
+    snap.forEach(doc => deleteDoc(doc.ref));
+    if (chatMessages) chatMessages.innerHTML = '';
+}
+
+// Initialize ping sound
+const pingSound = new Audio('ping.wav');
+pingSound.volume = 0.7;
+
+// ... rest of the chat-related code ...
+</script>
+
+<!-- Replace the previous double tap script with this card-specific version -->
+<script>
+// Simple double tap implementation
+document.addEventListener('DOMContentLoaded', function() {
+    let lastTap = 0;
+    let lastElement = null;
+    let selectedForSwap = null;
+
+    // Function to handle property interaction
+    function handlePropertyInteraction(element) {
+        const currentTime = new Date().getTime();
+        const tapInterval = currentTime - lastTap;
+
+        if (lastElement === element && tapInterval < 500) {
+            // Double tap detected
+            console.log('Double tap detected on property');
+            
+            // Visual feedback
+            element.classList.add('tap-highlight');
+            setTimeout(() => element.classList.remove('tap-highlight'), 300);
+
+            // Check if property can be stolen
+            if (element.getAttribute('data-can-steal') === 'true') {
+                console.log('Attempting steal...');
+                window.stealCard(element);
+                lastTap = 0;
+                lastElement = null;
+                return;
+            }
+
+            // Handle swap
+            if (element.getAttribute('data-can-swap') === 'true') {
+                if (!selectedForSwap) {
+                    // First property selection
+                    selectedForSwap = element;
+                    element.classList.add('selected-for-swap');
+                    showMessage('Select another property to swap with');
+                } else if (selectedForSwap !== element) {
+                    // Second property selection - perform swap
+                    console.log('Attempting swap...');
+                    window.swapCards(selectedForSwap, element);
+                    selectedForSwap.classList.remove('selected-for-swap');
+                    selectedForSwap = null;
+                }
+            }
+
+            lastTap = 0;
+            lastElement = null;
+        } else {
+            // First tap
+            lastTap = currentTime;
+            lastElement = element;
+            showMessage('Tap again to interact');
+        }
+    }
+
+    // Update interactive properties
+    function updateInteractiveProperties() {
+        if (!window.localGameData || !window.currentUserId) return;
+
+        const gameData = window.localGameData;
+        const playerState = gameData.players[window.currentUserId];
+        if (!playerState) return;
+
+        document.querySelectorAll('.space.property, .space.set-property').forEach(property => {
+            const propId = parseInt(property.id.replace('space-', ''));
+            const propertyData = gameData.propertyData.find(p => p.id === propId);
+            
+            if (propertyData) {
+                // Reset properties
+                property.removeAttribute('data-can-swap');
+                property.removeAttribute('data-can-steal');
+                property.classList.remove('interactive-property');
+                
+                // Check for swap capability
+                if (propertyData.owner === window.currentUserId || 
+                    (propertyData.owner && propertyData.owner !== window.currentUserId && 
+                     gameData.propertyData.some(p => p.owner === window.currentUserId))) {
+                    property.setAttribute('data-can-swap', 'true');
+                    property.classList.add('interactive-property');
+                }
+                
+                // Check for steal capability
+                if (playerState.stealCards > 0 && 
+                    propertyData.owner && 
+                    propertyData.owner !== window.currentUserId) {
+                    property.setAttribute('data-can-steal', 'true');
+                    property.classList.add('interactive-property');
+                }
+
+                property.setAttribute('data-property-id', propId);
+            }
+        });
+    }
+
+    // Add event listeners
+    const boardContainer = document.getElementById('board-container');
+    if (boardContainer) {
+        // Handle both touch and click events
+        boardContainer.addEventListener('touchstart', function(e) {
+            const property = e.target.closest('.space.property, .space.set-property');
+            if (property && property.classList.contains('interactive-property')) {
+                e.preventDefault();
+                handlePropertyInteraction(property);
+            }
+        });
+
+        boardContainer.addEventListener('click', function(e) {
+            const property = e.target.closest('.space.property, .space.set-property');
+            if (property && property.classList.contains('interactive-property')) {
+                e.preventDefault();
+                handlePropertyInteraction(property);
+            }
+        });
+    }
+
+    // Update interactive properties periodically
+    setInterval(updateInteractiveProperties, 1000);
+    updateInteractiveProperties();
+});
+</script>
+
+<style>
+/* Updated styles for interactive properties */
+.interactive-property {
+    cursor: pointer;
+    position: relative;
+}
+
+.interactive-property::before {
+    content: '👆';
+    position: absolute;
+    top: -15px;
+    right: -5px;
+    font-size: 12px;
+    opacity: 0.8;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.tap-highlight {
+    animation: tapPulse 0.3s ease-out;
+}
+
+@keyframes tapPulse {
+    0% { transform: scale(1); box-shadow: 0 0 0 rgba(255, 255, 255, 0); }
+    50% { transform: scale(1.1); box-shadow: 0 0 20px rgba(255, 255, 255, 0.8); }
+    100% { transform: scale(1); box-shadow: 0 0 0 rgba(255, 255, 255, 0); }
+}
+
+.selected-for-swap {
+    box-shadow: 0 0 15px #2ecc71 !important;
+    transform: scale(1.05);
+    transition: all 0.3s ease;
+}
+
+.selected-for-swap::before {
+    content: '🔄';
+}
+
+.tap-message {
+    position: fixed;
+    bottom: 20%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 14px;
+    z-index: 1000;
+    animation: messagePopup 0.3s ease-out;
+}
+
+@keyframes messagePopup {
+    0% { transform: translate(-50%, 20px); opacity: 0; }
+    100% { transform: translate(-50%, 0); opacity: 1; }
+}
+</style>
+
+<!-- Add these styles for the steal effect -->
+<style>
+.steal-effect {
+    animation: stealAnimation 0.5s ease-out;
+}
+
+@keyframes stealAnimation {
+    0% { transform: scale(1) rotate(0deg); opacity: 1; }
+    50% { transform: scale(1.2) rotate(180deg); opacity: 0.7; }
+    100% { transform: scale(1) rotate(360deg); opacity: 1; }
+}
+</style>
+
+<!-- Add card interaction functions -->
+<script>
+window.swapCards = async function(card1, card2) {
+    if (!window.currentGameId || !window.currentUserId) {
+        console.error('Game or user ID not available');
+        return;
+    }
+
+    const gameDocRef = doc(db, "games", window.currentGameId);
+    const gameData = window.localGameData;
+
+    if (!gameData) {
+        console.error('Game data not available');
+        return;
+    }
+
+    // Get property IDs from the cards
+    const propId1 = card1.getAttribute('data-property-id');
+    const propId2 = card2.getAttribute('data-property-id');
+
+    if (!propId1 || !propId2) {
+        console.error('Property IDs not found on cards');
+        return;
+    }
+
+    // Set up the swap state
+    window._propertySwapState = {
+        cardA: { playerId: window.currentUserId, propId: parseInt(propId1) },
+        cardB: { playerId: gameData.propertyData.find(p => p.id === parseInt(propId2))?.owner, propId: parseInt(propId2) },
+        swapInitiatorPlayerId: window.currentUserId,
+        swapActive: true,
+        swapTimeout: null
+    };
+
+    // Update flashing properties
+    await updateDoc(gameDocRef, {
+        flashingProperties: [parseInt(propId1), parseInt(propId2)],
+        lastActionMessage: `${gameData.players[window.currentUserId]?.name || 'A player'} initiated a property swap.`,
+        updatedAt: serverTimestamp()
+    });
+
+    // Set timeout for swap cancellation
+    window._propertySwapState.swapTimeout = setTimeout(async () => {
+        await updateDoc(gameDocRef, {
+            flashingProperties: [],
+            lastActionMessage: 'Property swap timed out.',
+            updatedAt: serverTimestamp()
+        });
+        window._propertySwapState = { cardA: null, cardB: null, swapInitiatorPlayerId: null, swapActive: false, swapTimeout: null };
+    }, 30000); // 30 second timeout
+};
+
+window.stealCard = async function(card) {
+    if (!window.currentGameId || !window.currentUserId) {
+        console.error('Game or user ID not available');
+        return;
+    }
+
+    const gameDocRef = doc(db, "games", window.currentGameId);
+    const gameData = window.localGameData;
+
+    if (!gameData) {
+        console.error('Game data not available');
+        return;
+    }
+
+    const propId = card.getAttribute('data-property-id');
+    if (!propId) {
+        console.error('Property ID not found on card');
+        return;
+    }
+
+    // Check if player has steal cards
+    const playerState = gameData.players[window.currentUserId];
+    if (!playerState || !playerState.stealCards || playerState.stealCards <= 0) {
+        showMessage('You need a steal card to perform this action!');
+        return;
+    }
+
+    try {
+        await runTransaction(db, async (transaction) => {
+            const gameDoc = await transaction.get(gameDocRef);
+            const gameData = gameDoc.data();
+
+            // Find the property
+            const propertyIndex = gameData.propertyData.findIndex(p => p.id === parseInt(propId));
+            if (propertyIndex === -1) {
+                throw new Error('Property not found');
+            }
+
+            // Update property owner
+            const updates = {
+                [`propertyData.${propertyIndex}.owner`]: window.currentUserId,
+                [`players.${window.currentUserId}.stealCards`]: playerState.stealCards - 1,
+                lastActionMessage: `${playerState.name} stole a property using a steal card!`,
+                updatedAt: serverTimestamp()
+            };
+
+            transaction.update(gameDocRef, updates);
+        });
+
+        // Add steal effect
+        card.classList.add('steal-effect');
+        setTimeout(() => card.classList.remove('steal-effect'), 500);
+
+        // Play steal sound effect if available
+        if (window.playStealSound) {
+            window.playStealSound();
+        }
+    } catch (error) {
+        console.error('Error stealing property:', error);
+        showMessage('Failed to steal property. Please try again.');
+    }
+};
+
+function showMessage(message) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'tap-message';
+    messageDiv.textContent = message;
+    document.body.appendChild(messageDiv);
+    setTimeout(() => messageDiv.remove(), 2000);
+}
+</script>
+
+</body>
+</html>

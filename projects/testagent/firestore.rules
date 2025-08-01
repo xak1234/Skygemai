@@ -1,0 +1,50 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Rule for the chat collection
+    match /migrantopoly-chat/{chatMessage} {
+      allow read, write: if request.auth != null;
+    }
+
+    // ⭐⭐⭐ ONLINE USERS PRESENCE SYSTEM ⭐⭐⭐
+    // Allow authenticated users to manage their own presence
+    match /online-users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Allow authenticated users to read all online users (for display purposes)
+    match /online-users/{document=**} {
+      allow read: if request.auth != null;
+    }
+
+    // ⭐⭐⭐ CORRECTED RULE FOR GAME DOCUMENTS ⭐⭐⭐
+    // Fixed collection name from 'migrantopoly-games' to 'games' to match your code
+    match /games/{gameId} {
+      // Rule 1: Allow creation if authenticated
+      allow create: if request.auth != null;
+
+      // Rule 2: Allow read if the user is authenticated AND
+      // (they are the host OR they are in the players map)
+      // This handles cases where host might not be in players initially
+      allow read: if request.auth != null && 
+                     (resource.data.hostId == request.auth.uid || 
+                      request.auth.uid in resource.data.players);
+
+      // Rule 3: Allow update if the user is authenticated AND
+      // they are either the host OR a player in the game
+      // This allows players to update their own game state
+      allow update: if request.auth != null && 
+                       (resource.data.hostId == request.auth.uid || 
+                        request.auth.uid in resource.data.players);
+
+      // Rule 4: Allow delete only if the user is the host
+      allow delete: if request.auth != null && 
+                       resource.data.hostId == request.auth.uid;
+    }
+
+    // Default rule for all other documents - deny access (important for security)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

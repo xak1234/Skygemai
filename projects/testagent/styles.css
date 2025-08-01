@@ -1,0 +1,2104 @@
+body {
+         padding: 0px 20px;
+         color: #ecf0f1;
+         position: relative;
+         overflow-x: hidden;
+         font-family: 'Inter', Arial, sans-serif;
+         min-height: 100vh;
+        background: #2c3e50; 
+         z-index: 1;
+         display: flex;
+         align-items: center;
+         justify-content: center;
+         }
+         body::before {
+         content: ''; 
+         position: fixed;
+         top: 30%;
+         left: 50%;
+         width: 1200px;
+         height: 700px;
+         transform: translate(-50%, -50%);
+        background-color: rgba(255,255,255,0.05); 
+         background-size: contain;
+         background-repeat: no-repeat;
+         background-position: center;
+         opacity: 0.18;
+         pointer-events: none;
+         z-index: 0;
+         mix-blend-mode: lighten;
+         }
+.property-flash {
+    animation: flash-animation 1s infinite alternate;
+    box-shadow: 0 0 10px 5px gold !important; /* Example flash effect */
+}
+         .main-content {
+         position: relative;
+         z-index: 3;
+         display: flex;
+         flex-direction: column;
+         align-items: center;
+         justify-content: center;
+         min-height: 100vh;
+         width: 100%;
+         padding-top: 0px;
+         padding-bottom: 20px;
+        /* background-color: #2c3e50;*/
+         }
+         /* Make the setup screens more compact and modern */
+         #player-setup-screen, #online-setup-screen {
+         display: flex;
+         flex-direction: column;
+         align-items: center;
+         justify-content: center;
+         background-color: #2c3e50;
+         padding: 18px 22px;
+         border-radius: 10px;
+         border: 2px solid #7f8c8d;
+         box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+         color: #ecf0f1;
+         text-align: center;
+         width: 100%;
+         max-width: 340px;
+         }
+         #player-setup-screen h2, #online-setup-screen h2 {
+         color: #1abc9c;
+         margin-top: 0;
+         margin-bottom: 18px;
+         font-size: 1.3em;
+         }
+         .setup-row {
+         display: flex;
+         justify-content: space-between;
+         align-items: center;
+         width: 100%;
+         margin-bottom: 12px;
+         }
+         #player-setup-screen label, #online-setup-screen label {
+         font-size: 0.98em;
+         margin-right: 10px;
+         flex-basis: 40%;
+         text-align: left;
+         }
+         #player-setup-screen select, #online-setup-screen select, #online-setup-screen input {
+         padding: 7px;
+         border-radius: 5px;
+         border: 1px solid #7f8c8d;
+         background-color: #34495e; 
+         color: #ecf0f1;
+         font-size: 0.98em;
+         flex-grow: 1;
+         }
+         #online-setup-screen input {
+         width: calc(100% - 16px);
+         }
+         #player-setup-screen button, #online-setup-screen button {
+         background-color: #27ae60;
+         color: white;
+         padding: 5px 18px;
+         font-size: 1em;
+         border: none;
+         border-radius: 5px;
+         cursor: pointer;
+         transition: background-color 0.2s;
+         margin-top: 10px;
+         margin-right: 6px;
+         }
+         #player-setup-screen button:last-child, #online-setup-screen button:last-child {
+         margin-right: 0;
+         }
+         #player-setup-screen button:hover, #online-setup-screen button:hover {
+         background-color: #2ecc71;
+         }
+         #online-setup-screen button.secondary {
+         background-color: #3498db;
+         }
+         #online-setup-screen button.secondary:hover {
+         background-color: #2980b9;
+         }
+         #player-setup-message, #online-setup-message {
+         color: #f1c40f;
+         font-size: 0.9em;
+         margin-top: 10px;
+         min-height: 1.2em;
+         }
+         #game-id-display {
+         margin-top: 10px;
+         font-size: 1em;
+         color: #1abc9c;
+         }
+         #game-id-display span {
+         font-weight: bold;
+         background-color: #34495e;
+         padding: 4px 8px;
+         border-radius: 4px;
+         cursor: pointer;
+         }
+         #user-id-display {
+         position: fixed;
+         top: 5px;
+         left: 10px;
+         background-color: rgba(0,0,0,0.5);
+         color: #fff;
+         padding: 5px 10px;
+         border-radius: 5px;
+         font-size: 0.8em;
+         z-index: 1000;
+         }
+         #game-container, #game-info-area, #board-container {
+         position: sticky;
+         z-index: 1;
+         }
+         #game-container {
+         display: none; /* Initially hidden */
+         flex-wrap: wrap;
+         justify-content: center;
+         gap: 90px;
+         padding-top: 0px;
+         }
+         #board-container {
+         display: grid;
+         grid-template-columns: 100px repeat(9, 70px) 100px;
+         grid-template-rows: 100px repeat(9, 80px) 100px;
+         border: 3px solid #7f8c8d;
+         width: 830px; /* Fixed width */
+         height: 920px; /* Adjusted height: 100 + (9*80) + 100 = 920px */
+         position: relative;
+         background-color: rgba(52, 73, 94, 0.68);
+         border-radius: 5px;
+         box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+         overflow: visible;
+         margin-top: 5px;
+         /* Adjusted background image properties */
+         background-image: url('train.png');
+         background-size: 630px 720px; /* Size matches the inner area (9x70px wide by 9x80px tall) */
+         background-position: center center;
+         background-repeat: no-repeat;
+         }
+         #card-decks-center {
+         display: none; /* Hide the center image container, since background is now on the board */
+         }
+         #center-board-image { display: none; }
+         .card-deck {
+         width: 110px;
+         height: 60px;
+         background: linear-gradient(135deg, #f7ca18 60%, #f1c40f 100%);
+         border: 2px solid #7f8c8d;
+         border-radius: 10px;
+         box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+         display: flex;
+         align-items: center;
+         justify-content: center;
+         font-size: 1.1em;
+         font-weight: bold;
+         color: #2c3e50;
+         cursor: pointer;
+         user-select: none;
+         transition: transform 0.1s;
+         }
+         .card-deck.opportunity {
+         background: linear-gradient(135deg, #6dd5ed 60%, #2193b0 100%);
+         color: #fff;
+         }
+         .card-deck.welfare {
+         background: linear-gradient(135deg, #f7ca18 60%, #f1c40f 100%);
+         color: #2c3e50;
+         }
+         .card-deck:active {
+         transform: scale(0.96);
+         }
+         #on-board-card-display {
+         position: absolute;
+         top: 50%;
+         left: 50%;
+         transform: translate(-50%, -50%);
+         width: 280px;
+         min-height: 190px;
+         background-color: #fdf5e6;
+         border: 3px solid #c0392b;
+         border-radius: 15px;
+         box-shadow: 0 6px 22px rgba(0,0,0,0.35);
+         z-index: 100;
+         display: none;
+         flex-direction: column;
+         align-items: center;
+         justify-content: flex-start;
+         padding: 20px;
+         box-sizing: border-box;
+         text-align: center;
+     }
+
+#on-board-card-display h4 {
+    width: 100%;
+    margin: 0 0 15px 0;
+    padding: 10px;
+    font-size: 1.4em;
+    color: #c0392b;
+    font-weight: bold;
+    text-align: center;
+    border-bottom: 2px solid rgba(192, 57, 43, 0.2);
+}
+
+#on-board-card-display p {
+    margin: 0;
+    padding: 15px;
+    font-size: 1.1em;
+    line-height: 1.45;
+    color: #34495e;
+    background-color: rgba(255, 255, 255, 0.9);
+    border-radius: 10px;
+    width: 100%;
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 80px;
+}
+
+#on-board-card-ok-button {
+    margin-top: 15px;
+    padding: 8px 25px;
+    font-size: 1.1em;
+    background-color: #27ae60;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+#on-board-card-ok-button:hover {
+    background-color: #2ecc71;
+    transform: translateY(-2px);
+}
+
+#on-board-card-ok-button:disabled {
+    background-color: #95a5a6;
+    cursor: not-allowed;
+    transform: none;
+}
+         .space {
+         border: 1px solid #7f8c8d;
+         display: flex;
+         flex-direction: column;
+         align-items: center;
+         justify-content: center;
+         text-align: center;
+         font-size: 10px;
+         position: relative;
+         padding: 3px;
+         box-sizing: border-box;
+         background-color: #4a6378;
+         color: #ecf0f1;
+         border-radius: 5px;
+         }
+         .space .name {
+         font-weight: bold;
+         font-size: 10px;
+         margin-bottom: 2px;
+         line-height: 1.2;
+         }
+         .space .price {
+         color: #fff !important;
+         background: #e74c3c !important;
+         font-size: 1.1em !important;
+         position: relative;
+         z-index: 1;
+         padding: 2px 8px;
+         border-radius: 6px;
+         font-weight: bold;
+         display: inline-block;
+         margin-top: 2px;
+         }
+         .space .owner-indicator {
+         width: 90%;
+         height: 6px;
+         margin-top: 3px;
+         background-color: transparent;
+         border-radius: 3px;
+         position: absolute;
+         bottom: 3px;
+         left: 5%;
+         }
+         .space .development-indicator {
+         font-size: 12px;
+         color: #fff;
+         position: absolute;
+         top: 15px;
+         width: 100%;
+         text-align: center;
+         line-height: 1;
+         text-shadow: 0 0 2px #000;
+         }
+         .space .sub-label {
+         font-size: 10px;
+         color: #e74c3c;
+         font-weight: bold;
+         margin-top: 2px;
+         letter-spacing: 0.04em;
+         text-align: center;
+         line-height: 1.1;
+         }
+         .corner {
+         font-weight: bold;
+         background-color: #527a78;
+         }
+         .corner .name {
+         font-size: 16px !important;
+         color: #e74c3c !important;
+         font-weight: bold !important;
+         margin-top: 0;
+         }
+         .corner .name.detention-center-name {
+         margin-top: 1px;
+         position: relative;
+         z-index: 1;
+         font-size: 18px !important;
+         font-weight: bold;
+         letter-spacing: 0.04em;
+         color: #e74c3c !important;
+         text-shadow: 1px 1px 2px #fff, 0 0 2px #fff;
+         }
+         .property .color-bar {
+         width: 100%;
+         height: 12px;
+         border-bottom: 1px solid #7f8c8d;
+         position: absolute;
+         top: 0;
+         left: 0;
+         border-top-left-radius: 4px;
+         border-top-right-radius: 4px;
+         }
+         .space.property .name {
+         color: #ecf0f1 !important;
+         font-size: 11px !important;
+         font-family: 'Inter', Arial, sans-serif !important;
+         margin-top: 14px;
+         }
+         .welfare .name, .opportunity .name, .tax .name, .payout .name, .neutral:not(.corner) .name {
+         margin-top: 0;
+         }
+         .set-property {
+         background-color: #303F4D;
+         }
+         .set-property .name {
+         margin-top: 0;
+         font-size: 11px;
+         font-weight: bold;
+         }
+         .brown .color-bar { background-color: #8B4513; }
+         .light-blue .color-bar { background-color: #0066CC; } /* Changed to darker blue */
+         .pink .color-bar { background-color: #FF1493; } /* Changed to Deep Pink */
+         .orange .color-bar { background-color: #FFA500; }
+         .red .color-bar { background-color: #FF0000; }
+         .green .color-bar { background-color: #008000; }
+         .darkgrey .color-bar { background-color: #000000; }
+         .player-token {
+         width: 42px; /* Increased from 36px */
+         height: 42px; /* Increased from 36px */
+         border-radius: 50%;
+         position: absolute;
+         border: none;
+         font-size: 40px; /* Increased from 34px */
+         line-height: 42px; /* Adjusted to match height */
+         text-align: center;
+         background: none;
+         z-index: 10;
+         user-select: none;
+         pointer-events: none;
+         }
+         #game-info-area {
+         width: 220px;
+         min-width: 180px;
+         max-width: 90vw;
+         display: flex;
+         flex-direction: column;
+         gap: 6px;
+         padding: 4px 0;
+         position: fixed;
+         top: 24px;
+         right: 18px;
+         z-index: 2000;
+         background: rgba(44, 62, 80, 0.92);
+         border-radius: 12px;
+         box-shadow: 0 4px 24px #0005;
+         transition: box-shadow 0.2s;
+         touch-action: none;
+         }
+         #game-info-area.draggable {
+         cursor: move;
+         box-shadow: 0 8px 32px #0008, 0 0 0 2px #27ae60;
+         }
+         #player-info, #controls, #card-display-container, #game-status-message-container, #develop-property-container {
+         padding: 6px 8px;
+         background-color: #34495e;
+         border: 1px solid #7f8c8d;
+         border-radius: 8px;
+         box-shadow: 0 1px 2px rgba(0,0,0,0.12);
+         color: #ecf0f1;
+         margin-bottom: 2px;
+         font-size: 13px;
+         }
+         #game-info-area .drag-handle {
+         width: 100%;
+         height: 18px;
+         background: linear-gradient(90deg, #1976d2 30%, #27ae60 100%);
+         border-radius: 10px 10px 0 0;
+         cursor: grab;
+         display: flex;
+         align-items: center;
+         justify-content: center;
+         color: #fff;
+         font-size: 13px;
+         font-weight: bold;
+         letter-spacing: 0.04em;
+         user-select: none;
+         margin-bottom: 2px;
+         }
+         @media (max-width: 600px) {
+         #game-info-area {
+         width: 98vw;
+         min-width: 0;
+         left: 1vw !important;
+         right: auto !important;
+         top: 8px;
+         border-radius: 10px;
+         font-size: 12px;
+         }
+         #player-info, #controls, #card-display-container, #game-status-message-container, #develop-property-container {
+         font-size: 12px;
+         padding: 4px 4px;
+         }
+         #game-info-area .drag-handle {
+         font-size: 12px;
+         height: 16px;
+         }
+         }
+         #card-message { margin-bottom: 10px; font-size: 14px; }
+         button {
+         padding: 10px 15px;
+         font-size: 14px;
+         cursor: pointer;
+         background-color: #e74c3c;
+         color: white;
+         border: none;
+         border-radius: 6px;
+         transition: background-color 0.2s;
+         margin-top: 5px;
+         margin-right: 5px;
+         }
+         button:last-child { margin-right: 0; }
+         button:hover {
+         background-color: #c0392b;
+         }
+         button:disabled {
+         background-color: #7f8c8d !important;
+         color: #bdc3c7 !important;
+         cursor: not-allowed;
+         opacity: 0.7;
+         box-shadow: none !important;
+         transform: none !important;
+         border-color: #6c7a89 !important;
+         }
+         .main-action-button {
+         display: block !important;
+         margin: 8px auto !important;
+         }
+         #end-turn-button {
+         background-color: #d35400;
+         }
+         #end-turn-button:hover {
+         background-color: #e67e22;
+         }
+         #end-turn-button:disabled {
+         background-color: #d35400 !important;
+         opacity: 0.5;
+         }
+         #develop-property-button {
+         background-color: #0066CC; /* Dark Blue */
+         color: white;
+         border: none;
+         padding: 8px 12px; /* Made smaller */
+         font-size: 0.9em; /* Made smaller */
+         font-weight: bold;
+         text-transform: uppercase;
+         letter-spacing: 0.5px;
+         transition: background-color 0.3s ease, transform 0.1s ease;
+         display: flex;
+         align-items: center;
+         justify-content: center;
+         gap: 5px; /* Adjusted for potentially more icons */
+         box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+         animation: develop-button-pulse 2s infinite; /* Added pulse */
+         }
+         #develop-property-button:hover {
+         background-color: #0052A3; /* Darker blue for hover */
+         transform: translateY(-1px);
+         box-shadow: 0 4px 8px rgba(0,0,0,0.25);
+         }
+         #develop-property-button:disabled {
+         background-color: #95a5a6;
+         color: #ecf0f1;
+         cursor: not-allowed;
+         transform: none;
+         box-shadow: none;
+         animation: none; /* Stop pulse when disabled */
+         }
+         #develop-property-button .hotel-icon { /* Assuming .hotel-icon is for houses */
+         font-size: 1.1em; /* Keep or adjust icon size */
+         color: white; /* Icons white */
+         transition: transform 0.2s ease-in-out;
+         }
+         #develop-property-button:hover .hotel-icon {
+         transform: scale(1.1); /* Simple scale on hover */
+         }
+         /* Stagger the hover animation for each hotel icon */
+         #develop-property-button:hover .hotel-icon:nth-child(2) {
+         transition-delay: 0.05s;
+         }
+         #develop-property-button:hover .hotel-icon:nth-child(3) {
+         transition-delay: 0.1s;
+         }
+         #card-display-container, #develop-property-container {
+         background-color: #34495e; /* Dark Slate Blue for window background */
+         color: #ecf0f1; /* Light text for window */
+         padding: 15px;
+         margin-top: 10px;
+         border-radius: 5px;
+         box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+         text-align: center;
+         }
+         #card-display-container h3, #develop-property-container h3 {
+         margin-top: 0;
+         margin-bottom: 15px;
+         color: white; /* Title white */
+         font-size: 1.2em;
+         border-bottom: 1px solid #4a627a; /* Separator for title */
+         padding-bottom: 10px;
+         }
+         #detention-actions {
+         display: flex;
+         flex-direction: column;
+         align-items: center;
+         gap: 8px;
+         margin-top: 10px;
+         }
+         #detention-actions button {
+         padding: 4px 8px !important;
+         margin-bottom: 2px !important;
+         font-size: 0.95em;
+         border-radius: 6px;
+         border: 2px solid #219a52;
+         transition: all 0.2s ease;
+         }
+         #detention-actions button:hover:not(:disabled) {
+         filter: brightness(85%);
+         transform: translateY(-1px);
+         box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+         }
+         #detention-actions button:disabled {
+         opacity: 0.6;
+         cursor: not-allowed;
+         }
+         #detention-actions button i {
+         font-size: 14px;
+         }
+         #game-status-message {
+         font-weight: bold;
+         color: #e74c3c;
+         min-height: 20px;
+         }
+         #pre-game-roll-area button {
+         background-color: #f1c40f;
+         color: #2c3e50;
+         }
+         #pre-game-roll-area button:hover {
+         background-color: #f39c12;
+         }
+         #pre-game-roll-results { margin-top: 10px; font-size: 13px; }
+         #develop-property-options button {
+         display: block;
+         width: 100%;
+         margin-bottom: 8px;
+         padding: 10px 15px;
+         font-size: 0.9em;
+         background-color: #0066CC; /* Dark Blue for buttons inside window */
+         color: white; /* White text */
+         border: none;
+         border-radius: 4px;
+         text-align: left; /* Align text to left if icons are on left */
+         transition: background-color 0.2s ease;
+         }
+         #develop-property-options button:hover {
+         background-color: #0052A3; /* Darker blue on hover */
+         }
+         /* Style for house icons within these buttons (e.g., if using <i class="fa fa-home"></i> or similar) */
+         #develop-property-options button .fa-home, 
+         #develop-property-options button .hotel-icon { /* Assuming .hotel-icon might be used here too */
+         margin-right: 10px; /* Space between icon and text */
+         color: white; /* Ensure icon is white */
+         font-size: 1.1em; /* Match icon size if needed */
+         }
+         .space.dole-space .name {
+         font-size: 26px !important;
+         font-weight: 900;
+         letter-spacing: 0.08em;
+         color: #fff !important;
+         background: #e74c3c !important;
+         text-transform: uppercase;
+         position: absolute;
+         top: 50%;
+         left: 50%;
+         width: 100%;
+         text-align: center;
+         transform: translate(-50%, -50%) rotate(-36deg);
+         transform-origin: center center;
+         white-space: nowrap;
+         pointer-events: none;
+         border-radius: 8px;
+         padding: 8px 0;
+         box-shadow: 0 2px 12px #a00a, 0 0 0 2px #fff;
+         font-family: 'Arial Black', Arial, sans-serif;
+         }
+         .dole-sign {
+         position: absolute;
+         top: 50%;
+         left: 50%;
+         transform: translate(-50%, -50%);
+         font-size: 24px;  /* Increased from previous size */
+         font-weight: bold;
+         color: #000000;  /* Changed to black */
+         text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.8);  /* Added white shadow for better visibility */
+         z-index: 2;
+         animation: bounce-dole-sign 2s infinite ease-in-out;
+         }
+
+@keyframes bounce-dole-sign {
+    0% {
+        transform: translateY(0);
+    }
+    100% {
+        transform: translateY(-5px);
+    }
+}
+
+@keyframes pulse-dole-sign {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.1);
+        opacity: 0.7;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+         .space.red-boardname .name {
+         color: #e74c3c !important;
+         font-weight: bold;
+         }
+         .space.yellow-boardname .name {
+         color: #f1c40f !important;
+         font-weight: bold;
+         }
+
+.smoke-effect-container {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 46px;
+    height: 64px;
+    pointer-events: none;
+    overflow: visible;
+    z-index: 30;
+    filter: blur(0.2px);
+    mix-blend-mode: lighten;
+}
+
+
+.smoke-puff {
+    position: absolute;
+    bottom: 2px;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    background: radial-gradient(ellipse at center, #d6ffeedd 0%, #bdbdbd00 70%);
+    opacity: 0.82;
+    border-radius: 50%;
+    filter: blur(2.5px) drop-shadow(0 0 18px #adfcff99);
+    animation: raveSmokePuff 3.5s linear infinite;
+    pointer-events: none;
+}
+
+
+@keyframes raveSmokePuff {
+    0% {
+        transform: translate(-50%, 0) scale(0.7) rotate(0deg);
+        opacity: 0.55;
+    }
+    15% {
+        opacity: 0.98;
+        filter: blur(2.5px) drop-shadow(0 0 30px #aaffffcc);
+    }
+    40% {
+        transform: translate(-40%, -22px) scale(1.3) rotate(10deg);
+        opacity: 0.92;
+    }
+    70% {
+        transform: translate(-60%, -47px) scale(2.0) rotate(-9deg);
+        opacity: 0.6;
+    }
+    100% {
+        transform: translate(-55%, -73px) scale(3.0) rotate(-15deg);
+        opacity: 0.02;
+    }
+}
+
+
+         .player-highlight {
+         animation: player-highlight-flash 1s;
+         background: #ffeaa7;
+         color: #222d3a !important;
+         }
+@keyframes flash-animation {
+    from { opacity: 1; }
+    to { opacity: 0.5; }
+}
+
+         @keyframes player-highlight-flash {
+         0% { background: #ffeaa7; }
+         60% { background: #ffeaa7; }
+         100% { background: transparent; }
+         }
+         #money-flash {
+         position: fixed;
+         top: 50%;
+         left: 50%;
+         transform: translate(-50%, -50%);
+         font-size: 7vw;
+         font-family: 'Impact', 'Arial Black', Arial, sans-serif;
+         color: #e74c3c; /* Red for loss, maybe green for gain later */
+         font-weight: bold;
+         opacity: 0;
+         pointer-events: none;
+         z-index: 1000;
+         text-shadow: 2px 2px 16px #000, 0 0 32px #fff;
+         transition: opacity 0.2s;
+         }
+         #money-flash.show {
+         opacity: 1;
+         animation: money-flash-pop 0.7s;
+         }
+         @keyframes money-flash-pop {
+         0% { opacity: 0; transform: translate(-50%, -50%) scale(0.7); }
+         20% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+         60% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+         100% { opacity: 0; transform: translate(-50%, -50%) scale(0.7); }
+         }
+         #rent-flash {
+         position: fixed;
+         top: 60%; /* Slightly lower than money flash */
+         left: 50%;
+         transform: translate(-50%, -50%);
+         font-size: 4.5vw; /* Adjusted for potentially longer text */
+         font-family: 'Impact', 'Arial Black', Arial, sans-serif;
+         color: #f39c12; /* Orange for rent */
+         font-weight: bold;
+         opacity: 0;
+         pointer-events: none;
+         z-index: 1000;
+         text-shadow: 2px 2px 10px #000, 0 0 20px #fff;
+         transition: opacity 0.3s, transform 0.3s;
+         text-align: center;
+         padding: 10px;
+         border-radius: 10px;
+         background-color: rgba(44, 62, 80, 0.7); /* Slight background for readability */
+         }
+         #rent-flash.show {
+         opacity: 1;
+         transform: translate(-50%, -50%) scale(1.1);
+         animation: rent-flash-pop 1.8s; /* Slightly longer display for rent text */
+         }
+         /* Using the same keyframes as money-flash-pop, but duration controlled by animation property */
+         .detention-bars {
+         position: absolute;
+         top: 0;
+         left: 0;
+         right: 0;
+         bottom: 0;
+         pointer-events: none;
+         display: flex;
+         justify-content: space-between;
+         z-index: 2;
+         padding: 0 4px;
+         }
+         .detention-bar {
+         width: 6px;
+         height: 100%;
+         background: #111;
+         border-radius: 3px;
+         opacity: 0.9;
+         box-shadow: 1px 0 3px rgba(0,0,0,0.5);
+         position: relative;
+         }
+         .detention-bar::after {
+         content: '';
+         position: absolute;
+         top: 0;
+         left: 50%;
+         transform: translateX(-50%);
+         width: 2px;
+         height: 100%;
+         background: rgba(255,255,255,0.2);
+         }
+         .detention-bar.flashing {
+         animation: detentionFlash 1.5s ease-in-out;
+         }
+         @keyframes detentionFlash {
+         0% { background: #111; }
+         20% { background: #2196F3; box-shadow: 0 0 10px #2196F3; }
+         40% { background: #111; }
+         60% { background: #2196F3; box-shadow: 0 0 10px #2196F3; }
+         80% { background: #111; }
+         100% { background: #111; }
+         }
+         .detention-arrow {
+         position: absolute;
+         bottom: 6px;
+         left: 50%;
+         transform: translateX(-50%);
+         font-size: 2em;
+         color: #e67e22;
+         font-weight: bold;
+         z-index: 2;
+         pointer-events: none;
+         text-shadow: 1px 1px 6px #000, 0 0 8px #fff;
+         }
+         #current-turn-display {
+         text-align: center;
+         width: 100%;
+         color: #ecf0f1;
+         font-weight: bold;
+         padding-bottom: 5px;
+         }
+         #current-turn-display.pulsing { /* New class for pulsing effect */
+         font-size: 1.2em; /* Slightly larger font */
+         animation: pulse-text-animation 1.5s infinite ease-in-out;
+         }
+         @keyframes pulse-text-animation { /* New animation for current turn text */
+         0% { transform: scale(1); opacity: 1; }
+         50% { transform: scale(1.05); opacity: 0.7; }
+         100% { transform: scale(1); opacity: 1; }
+         }
+         #game-status-message-container {
+         text-align: center;
+        font-size: 0.75em;
+         }
+        #controls {
+        padding: 4px 6px;
+        font-size: 12px;
+        }
+        #controls button {
+        margin-top: 3px;
+        padding: 6px 10px;
+        font-size: 12px;
+        }
+         #uk-gov-status {
+         padding: 8px;
+         background: #222d3a;
+         border: 1px solid #7f8c8d;
+         border-radius: 8px;
+         color: #f7ca18;
+         font-weight: bold;
+         text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+         }
+        #current-player-token-display {
+        font-size: 1.2em;
+        }
+        #owned-color-blocks {
+        display: flex;
+        gap: 3px;
+        }
+        .color-block {
+        width: 12px;
+        height: 12px;
+        border-radius: 2px;
+        border: 1px solid #7f8c8d;
+        }
+         #uk-gov-status-container {
+         width: 100%;
+         box-sizing: border-box;
+         }
+         #pre-game-roll-area {
+         display: none; /* Initially hidden */
+         flex-direction: column;
+         align-items: center;
+         width: 100%;
+         }
+        .overlay {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(24,28,36,0.48);
+        z-index: 2; /* Ensure it's above body::before but below main content modals */
+        pointer-events: none;
+        }
+
+        #login-screen {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(44,62,80,0.95);
+        z-index: 10;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: #ecf0f1;
+        }
+
+        #login-screen input {
+        padding: 8px;
+        margin: 5px;
+        border-radius: 4px;
+        border: 1px solid #7f8c8d;
+        background: #34495e;
+        color: #ecf0f1;
+        }
+
+        #login-screen button {
+        padding: 8px 16px;
+        margin-top: 5px;
+        border-radius: 4px;
+        border: 1px solid #7f8c8d;
+        background: #2980b9;
+        color: #ecf0f1;
+        cursor: pointer;
+        }
+
+        #login-screen button:hover {
+        background: #3498db;
+        }
+         .die {
+         width: 30px;
+         height: 30px;
+         border: 1px solid #ecf0f1;
+         background-color: #fff;
+         color: #2c3e50;
+         font-size: 18px;
+         font-weight: bold;
+         display: flex;
+         align-items: center;
+         justify-content: center;
+         border-radius: 4px;
+         box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+         }
+         .dice-animation {
+         animation: dice-roll-effect 0.4s ease-out;
+         }
+         @keyframes dice-roll-effect {
+         0% { transform: scale(1) rotate(0deg); opacity: 0.5; }
+         25% { transform: scale(1.3) rotate(90deg); opacity: 0.75; }
+         50% { transform: scale(1.1) rotate(180deg); opacity: 1; }
+         75% { transform: scale(1.3) rotate(270deg); opacity: 0.75; }
+         100% { transform: scale(1) rotate(360deg); opacity: 1; }
+         }
+         .token-hop { /* General hop for landing, can be reused or a new one for steps */
+         animation: hop-animation 0.3s ease-out;
+         }
+         @keyframes hop-animation {
+         0% { transform: translateY(0) scale(1); opacity: 1; }
+         30% { transform: translateY(-35px) scale(1.25); opacity: 0.9; }
+         60% { transform: translateY(-35px) scale(1.25); opacity: 0.9; }
+         100% { transform: translateY(0) scale(1); opacity: 1; }
+         }
+         .token-arrive-step { /* Short animation for each step */
+         animation: arrive-step-animation 0.15s ease-out;
+         }
+         @keyframes arrive-step-animation {
+         0% { transform: scale(0.8) translateY(2px); opacity: 0.7; }
+         100% { transform: scale(1) translateY(0); opacity: 1; }
+         }
+         #dice-display-master-container {
+         min-height: 32px;
+         text-align: center;
+         margin-bottom: 8px;
+         }
+         #actual-dice-faces {
+         display: inline-flex;
+         gap: 5px;
+         /* margin-left: 5px; */ /* Removed for better centering */
+         vertical-align: middle;
+         }
+         #dice-total-display-text {
+         margin-left: 8px;
+         font-weight: bold;
+         }
+         .token-flash {
+         animation: token-flash-animation 0.7s infinite alternate;
+         }
+         @keyframes token-flash-animation {
+         0% { opacity: 1; transform: scale(1.1); filter: drop-shadow(0 0 8px currentColor) drop-shadow(0 0 4px #fff); } /* Adjusted shadow */
+         100% { opacity: 0.6; transform: scale(1); filter: drop-shadow(0 0 4px currentColor); } /* Adjusted shadow */
+         }
+         .token-move-flash {
+         animation: token-move-flash-animation 0.2s infinite;
+         }
+         @keyframes token-move-flash-animation {
+         0%, 100% { opacity: 1; }
+         50% { opacity: 0.5; }
+         }
+         /* Modal Styles */
+         .modal {
+         display: none; /* Hidden by default */
+         position: fixed;
+         z-index: 1001; /* Sit on top */
+         left: 0;
+         top: 0;
+         width: 100%;
+         height: 100%;
+         overflow: auto; /* Enable scroll if needed */
+         background-color: rgba(0,0,0,0.6); /* Black w/ opacity */
+         align-items: center;
+         justify-content: center;
+         }
+         .modal-content {
+         background-color: #2c3e50;
+         margin: auto;
+         padding: 25px 35px;
+         border: 1px solid #7f8c8d;
+         border-radius: 10px;
+         width: 80%;
+         max-width: 450px;
+         box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+         text-align: center;
+         }
+         .modal-content h3 {
+         color: #1abc9c;
+         margin-top: 0;
+         }
+         .modal-content p {
+         margin-bottom: 20px;
+         }
+         .modal-content button {
+         background-color: #e74c3c;
+         }
+         .modal-content button:hover {
+         background-color: #c0392b;
+         }
+         /* --- Property Swap Flashing --- */
+         .property-flash {
+         animation: property-flash-anim 1s linear infinite;
+         }
+         @keyframes property-flash-anim {
+         0% { box-shadow: 0 0 8px 3px gold; }
+         50% { box-shadow: 0 0 15px 7px darkorange; }
+         100% { box-shadow: 0 0 0 0 #f1c40f; }
+         }
+
+/* --- New Icon Animations --- */
+
+/* Crypto Scam - Bitcoin Pulse */
+.icon-crypto-scam {
+    animation: bitcoin-pulse 1.5s infinite ease-in-out;
+}
+@keyframes bitcoin-pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.15); opacity: 0.7; }
+}
+
+/* Crack House - Smoke Animation */
+.icon-crack-house .smoke-puff {
+    display: inline-block; /* Allows transform */
+    animation: rise-and-fade 2.5s infinite linear;
+    margin-left: -2px; /* Adjust positioning relative to house */
+    opacity: 0.7;
+    color: #B0B0B0; /* Lighter grey for smoke */
+}
+@keyframes rise-and-fade {
+    0% {
+        transform: translateY(0) scale(0.8);
+        opacity: 0.7;
+    }
+    50% {
+        transform: translateY(-8px) scale(1.1);
+        opacity: 0.35;
+    }
+    100% {
+        transform: translateY(-16px) scale(0.6);
+        opacity: 0;
+    }
+}
+
+/* Child Wives - Gentle Rocking */
+.icon-child-wives {
+    display: inline-block; /* Allows transform */
+    animation: gentle-rock 2s infinite ease-in-out;
+}
+@keyframes gentle-rock {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(5deg); }
+    75% { transform: rotate(-5deg); }
+}
+
+/* Forced Marriage - Subtle Shimmer */
+.icon-forced-marriage {
+    animation: subtle-shimmer 3s infinite linear;
+}
+@keyframes subtle-shimmer {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
+/* Black Market Sales - Cigarette Flicker */
+.icon-black-market {
+    animation: cigarette-flicker 1s infinite steps(1, end);
+}
+@keyframes cigarette-flicker {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; transform: translateX(1px) translateY(-1px); }
+}
+
+/* Ensure board-icon class itself doesn't interfere if display:block was already set by JS */
+.board-icon {
+    /* display: inline-block; /* Might be needed if JS sets block and it causes issues */
+    /* vertical-align: middle; /* Helps with alignment sometimes */
+}
+
+/* Board Space Icons and Effects */
+.space-icon-container {
+    position: absolute;
+    top: 25%; /* Adjust as needed */
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 1.2em; /* Adjust icon size */
+    text-align: center;
+    width: 100%;
+    pointer-events: none; /* Icons should not interfere with clicks on the space */
+}
+
+.set-property-icon-container span,
+.card-icon-provider span,
+.tax-icon-container span,
+.payout-icon-container span,
+.crime-spree-icon-container span {
+    padding: 2px;
+    border-radius: 3px;
+    color: #333; /* Default icon color */
+}
+.set-property-icon-container span { /* Bitcoin color example */
+    color: #f7931a; 
+}
+
+
+/* Make sure icons in corners are positioned appropriately if they overlap names/prices */
+.corner .space-icon-container {
+    top: 40%; /* Example adjustment for corners */
+    font-size: 1.5em;
+}
+.corner .name {
+    font-size: 0.8em; /* May need to shrink corner names if icons are large */
+}
+
+
+.dole-sign {
+    font-size: 2em;
+    font-weight: bold;
+    color: green;
+}
+
+.detention-bars {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    display: flex;
+    justify-content: space-between;
+    z-index: 2;
+    padding: 0 4px;
+}
+
+.detention-bar {
+    width: 6px;
+    height: 100%;
+    background: #111;
+    border-radius: 3px;
+    opacity: 0.9;
+    box-shadow: 1px 0 3px rgba(0,0,0,0.5);
+    position: relative;
+}
+
+.detention-bar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    height: 100%;
+    background: rgba(255,255,255,0.2);
+}
+
+.detention-bar.flashing {
+    animation: detentionFlash 1.5s ease-in-out;
+}
+
+@keyframes detentionFlash {
+    0% { background: #111; }
+    20% { background: #2196F3; box-shadow: 0 0 10px #2196F3; }
+    40% { background: #111; }
+    60% { background: #2196F3; box-shadow: 0 0 10px #2196F3; }
+    80% { background: #111; }
+    100% { background: #111; }
+}
+
+.detention-space-styling .space-icon-container{
+    /* Potentially add a pulsing animation to the bars or a red light effect here */
+}
+
+
+.detention-arrow {
+    font-size: 2.5em;
+    font-weight: bold;
+    color: #c0392b;
+    animation: pointToDetention 1.5s infinite ease-in-out;
+}
+
+@keyframes pointToDetention {
+    0%, 100% { transform: translateX(0); }
+    50% { transform: translateX(5px); }
+}
+
+.go-to-detention-name {
+    background: #e74c3c;
+    color: #ffffff !important;
+    font-weight: 900;
+    font-size: 1.12em;
+    padding: 3px 7px;
+    border-radius: 5px;
+    box-shadow: 0 2px 8px #a00a, 0 0 0 2px #fff2;
+    letter-spacing: 0.04em;
+    text-shadow: 2px 2px 6px #111, 0 0 2px #111;
+    margin-top: 2px;
+    margin-bottom: 2px;
+    display: inline-block;
+}
+
+.go-to-detention-styling .sub-label {
+    color: #ffffff !important;
+    font-size: 0.6em;
+    position: absolute;
+    bottom: 5px;
+    width: 100%;
+    text-align: center;
+    text-shadow: 1px 1px 3px #000;
+}
+
+/* Ensure the name text is white in all contexts */
+.space .name.go-to-detention-name {
+    color: #ffffff !important;
+}
+
+/* Smoke Animation for Crack Houses */
+.smoke-effect-container {
+    position: absolute;
+    bottom: 0; /* Position at the bottom of the property space */
+    left: 0;
+    width: 100%;
+    height: 50%; /* Cover bottom half */
+    pointer-events: none;
+    overflow: hidden; /* Clip smoke plumes */
+}
+
+.smoke-plume {
+    position: absolute;
+    bottom: -10px; /* Start slightly below */
+    left: 50%;
+    width: 10px;
+    height: 10px;
+    background-color: rgba(128, 128, 128, 0.3); /* Semi-transparent grey */
+    border-radius: 50%;
+    opacity: 0;
+    transform-origin: 50% 100%; /* Base of the plume */
+    animation: riseAndFade 4s infinite linear;
+    animation-delay: var(--smoke-delay, 0s); /* Use custom property for staggering */
+}
+
+@keyframes riseAndFade {
+    0% {
+        transform: translate(-50%, 0) scale(0.5);
+        opacity: 0;
+    }
+    20% {
+        opacity: 0.7; /* Become visible */
+    }
+    100% {
+        transform: translate(-50%, -40px) scale(2.5); /* Rise and expand */
+        opacity: 0; /* Fade out */
+    }
+}
+
+/* Example of styling for a specific icon if needed */
+.set-property-icon-container span i.fa-bitcoin {
+    color: #f7931a; /* Bitcoin orange */
+}
+
+.space .name {
+    position: relative; /* Ensure name is above icons if they overlap */
+    z-index: 1;
+}
+
+.space .price {
+    position: relative; /* Ensure price is above icons */
+    z-index: 1;
+}
+
+/* Adjust yellow board names if they clash with new icons */
+.yellow-boardname .name {
+    /* color: #000; Ensure readability */
+}
+
+/* Utility/Icon space specific styling */
+.card-space .name, .tax-space .name, .payout-space .name, .crime-spree-space .name {
+    margin-top: 15px; /* Push name down if icon is above */
+}
+
+/* Ensure on-board-card-display is above everything */
+#on-board-card-display {
+    z-index: 100;
+}
+
+.detention-center {
+    background: linear-gradient(135deg, #2c3e50 60%, #34495e 100%);
+    border: 3px solid #000;
+    position: relative;
+    overflow: hidden;
+    background-image: url('images/migrant3.jpg') !important;
+    background-size: cover !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+    background-color: #2c3e50 !important;
+}
+
+.detention-center-name {
+    color: #e74c3c !important;
+    font-weight: 900 !important;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5) !important;
+    background: rgba(0,0,0,0.3) !important;
+    padding: 4px 8px !important;
+    border-radius: 4px !important;
+    position: relative !important;
+    z-index: 10 !important;
+}
+
+.detention-diagonal-label {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 160px;
+  color: #e74c3c;
+  font-weight: 900;
+  font-size: 1.18em;
+  text-shadow: 2px 2px 6px #fff, 0 0 4px #000, 2px 2px 0 #fff;
+  transform: translate(-50%, -50%) rotate(-28deg);
+  letter-spacing: 0.12em;
+  text-align: center;
+  pointer-events: none;
+  z-index: 10;
+  opacity: 0.97;
+  user-select: none;
+}
+
+
+/* --- CHAT STYLES --- */
+#chat-container {
+  position: fixed;
+  bottom: 18px;
+  right: 18px;
+  width: 220px; /* Expanded width */
+  background: #212b36e6;
+  color: #fff;
+  border-radius: 10px;
+  box-shadow: 0 4px 18px #0004;
+  z-index: 999; /* Ensure it's above other relevant content */
+  font-family: inherit;
+  overflow: hidden; /* Important for hiding content smoothly */
+  transition: height 0.3s ease-in-out, width 0.3s ease-in-out, padding 0.3s ease-in-out;
+  display: flex;
+  flex-direction: column;
+  /* Initial height will be determined by its content or set here if fixed */
+  /* e.g., height: 180px; for expanded state */
+}
+
+#chat-header-toggle {
+  background: #2d3b4c; /* Slightly different for distinction */
+  padding: 10px 12px;
+  font-weight: bold;
+  cursor: pointer;
+  user-select: none; /* Prevents text selection on click */
+  text-align: center;
+  border-bottom: 1px solid #384656; /* Only show if content is visible */
+}
+
+#chat-inner-content {
+  /* padding for the content area below the header could go here */
+  /* e.g., padding: 5px; */
+  flex-grow: 1; /* Allows content to fill remaining space */
+  display: flex;
+  flex-direction: column;
+  min-height: 0; /* Important for flex children to shrink correctly */
+}
+
+/* Specific styles from your inline ones (example, can be more granular) */
+#chat-messages {
+  background-color: #212b36; /* Or inherit from chat-container */
+  flex-grow: 1; /* Allows messages to take space */
+}
+
+#chat-form {
+  background-color: #232c3d; /* Background for the form area */
+}
+
+#chat-input {
+  border-radius:0 0 0 10px; /* Maintain bottom-left radius */
+}
+
+#chat-form button {
+   border-radius:0 0 10px 0; /* Maintain bottom-right radius */
+}
+
+
+/* --- MINIMIZED STATE --- */
+#chat-container.minimized {
+  width: 150px !important;  /* Width when minimized */
+  height: 42px !important;   /* Height to fit just the header */
+  padding: 0 !important;     /* Remove padding when minimized */
+}
+
+#chat-container.minimized #chat-header-toggle {
+  border-bottom: none; /* No border when it's just the header showing */
+  border-radius: 10px; /* Round all corners of the header when minimized */
+}
+
+#chat-container.minimized #chat-inner-content {
+  display: none !important; /* Hide the message and input sections */
+}
+
+
+#swap-confirm-container {
+    font-family: Arial, sans-serif;
+    max-width: 400px;
+}
+#swap-confirm-container h3 {
+    margin-top: 0;
+    color: #ecf0f1;
+}
+#swap-confirm-container p {
+    margin: 10px 0;
+}
+#swap-confirm-container button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+#swap-accept-button:hover {
+    background-color: #27ae60;
+}
+#swap-decline-button:hover {
+    background-color: #c0392b;
+}
+
+.space.property.darkgrey .name {
+    color: #fff !important;
+    font-size: 11px !important;
+    font-weight: bold !important;
+    font-family: 'Inter', Arial, sans-serif !important;
+}
+
+.property-icon {
+    position: absolute;
+    top: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 1.5em;
+    z-index: 2;
+    color: #fff;
+    pointer-events: none;
+    text-shadow: 0 2px 8px #222, 0 0 2px #000;
+}
+.property.darkgrey .property-icon { color: #fffbe6; }
+.property.lightblue .property-icon { color: #0066CC; } /* Changed to darker blue */
+.property.brown .property-icon { color: #8B4513; }
+.property.pink .property-icon { color: #FF1493; } /* Changed to Deep Pink */
+.property.orange .property-icon { color: #FFA500; }
+.property.red .property-icon { color: #FF0000; }
+.property.green .property-icon { color: #008000; }
+.property.yellow .property-icon { color: #f1c40f; }
+
+.player-on-space {
+    animation: player-on-space-pulse 1.2s infinite alternate;
+    box-shadow: 0 0 16px 6px #f7ca18, 0 0 0 2px #fff;
+    z-index: 20;
+}
+@keyframes player-on-space-pulse {
+    0% {
+        box-shadow: 0 0 8px 2px #f7ca18, 0 0 0 2px #fff;
+    }
+    100% {
+        box-shadow: 0 0 24px 10px #ffe066, 0 0 0 2px #fff;
+    }
+}
+
+.card-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5em; /* Adjusted for icon size */
+    font-weight: bold;
+    color: #2ecc71; /* Green color for cash icon */
+    background: none; /* Remove previous background */
+    border-radius: 6px;
+    padding: 2px 5px; /* Adjusted padding */
+    margin: 2px auto 2px auto;
+    letter-spacing: 0.04em;
+    box-shadow: none; /* Remove previous shadow if any */
+    width: fit-content;
+    min-width: 38px;
+    min-height: 1.5em; /* Ensure consistent height */
+}
+.card-space .card-icon {
+    /* background: #27ae60; */ /* Old background, removed */
+    /* color: #fff; */ /* Old color, now green from .card-icon */
+}
+.card-icon:empty { display: none; }
+
+.nhs-icon {
+    /* background: #1976d2 !important; */ /* Old background, removed */
+    color: #2ecc71 !important; /* Ensure NHS (now cash icon) is also green */
+}
+
+/* === All Ownable Property Card Custom Layout === */
+
+/* Parent container for all ownable property cards:
+   Top IDs:    1, 2, 3, 4, 5, 8, 9 (Fake PIP #7 removed, Payout #16 removed elsewhere)
+   Right IDs:  11, 12, 13, 14, 15, 18, 19 (Payout #16 should be excluded)
+   Bottom IDs: 21, 22, 23, 24, 28, 29 (Fake ID #27 should be excluded)
+   Left IDs:   32, 33, 34, 35, 37, 38, 39 */
+#space-1, #space-2, #space-3, #space-4, #space-5, #space-8, #space-9, /* Top: Added #space-5 back, REMOVE #space-7 (Fake PIP). #space-9 is OK (orig Tent2) */
+#space-11, #space-12, #space-13, #space-14, #space-15, #space-18, #space-19, /* Right: Ensure #space-16 (Payout) is NOT here */
+#space-21, #space-22, #space-23, #space-24, #space-28, #space-29, /* Bottom: Ensure #space-27 (Fake ID) is NOT here. Original #space-21 IS ownable. */
+#space-32, #space-33, #space-34, #space-35, #space-37, #space-38, #space-39 /* Left */ {
+    justify-content: flex-start; /* Align children to the top initially */
+    padding-top: 0px; /* Reduce top padding if color bar is main top element */
+    padding-bottom: 2px; /* Reduce bottom padding to bring price closer to edge */
+}
+
+/* Development Indicator: Order 1 */
+#space-1 .development-indicator, #space-2 .development-indicator, #space-3 .development-indicator, 
+#space-4 .development-indicator, #space-5 .development-indicator, #space-8 .development-indicator, #space-9 .development-indicator, /* Top Row */
+#space-11 .development-indicator, #space-12 .development-indicator, #space-13 .development-indicator, #space-14 .development-indicator, #space-15 .development-indicator, #space-18 .development-indicator, #space-19 .development-indicator, /* Right Col */
+#space-21 .development-indicator, #space-22 .development-indicator, #space-23 .development-indicator, #space-24 .development-indicator, #space-28 .development-indicator, #space-29 .development-indicator, /* Bottom Row */
+#space-32 .development-indicator, #space-33 .development-indicator, #space-34 .development-indicator, #space-35 .development-indicator, #space-37 .development-indicator, #space-38 .development-indicator, #space-39 .development-indicator /* Left Col */ {
+    order: 1;
+    position: relative; top: auto; left: auto;
+    width: 90%; margin: 2px auto; min-height: 16px; line-height: 16px;
+}
+
+/* Specifics for Top/Bottom Row Development Indicators */
+#space-1 .development-indicator, #space-2 .development-indicator, #space-3 .development-indicator, 
+#space-4 .development-indicator, #space-5 .development-indicator, #space-8 .development-indicator, #space-9 .development-indicator, /* Top Row */
+#space-21 .development-indicator, #space-22 .development-indicator, #space-23 .development-indicator, #space-24 .development-indicator, #space-28 .development-indicator, #space-29 .development-indicator /* Bottom Row */ {
+    margin: 1px auto 0px auto;
+    min-height: 12px;
+    line-height: 12px;
+}
+
+/* Property Icon: Order 2 */
+#space-1 .property-icon, #space-2 .property-icon, #space-3 .property-icon,
+#space-4 .property-icon, #space-5 .property-icon, #space-8 .property-icon, #space-9 .property-icon, /* Top Row */
+#space-21 .property-icon, #space-22 .property-icon, #space-23 .property-icon, #space-24 .property-icon, #space-28 .property-icon, #space-29 .property-icon, /* Bottom Row */
+#space-11 .property-icon, #space-12 .property-icon, #space-13 .property-icon, #space-14 .property-icon, #space-15 .property-icon, #space-18 .property-icon, #space-19 .property-icon, /* Right Col */
+#space-32 .property-icon, #space-33 .property-icon, #space-34 .property-icon, #space-35 .property-icon, #space-37 .property-icon, #space-38 .property-icon, #space-39 .property-icon /* Left Col */ {
+    order: 2;
+    position: relative; top: auto; left: auto; transform: none;
+    margin: 1px auto 0px auto; 
+    font-size: 1.5em; 
+    height: 1.5em; 
+    display: inline-flex; align-items: center; justify-content: center;
+}
+
+/* Specifics for Top/Bottom Property Icons */
+#space-1 .property-icon, #space-2 .property-icon, #space-3 .property-icon,
+#space-4 .property-icon, #space-5 .property-icon, #space-8 .property-icon, #space-9 .property-icon, /* Top Row */
+#space-21 .property-icon, #space-22 .property-icon, #space-23 .property-icon, #space-24 .property-icon, #space-28 .property-icon, #space-29 .property-icon /* Bottom Row */ {
+    font-size: 1.4em;
+    height: 1.4em;
+    margin-top: 0px; /* Adjusted to move content up */
+}
+
+/* Further specific reduction for very constrained side properties (80px height) */
+#space-11 .property-icon, #space-12 .property-icon, #space-13 .property-icon, #space-14 .property-icon, #space-15 .property-icon, #space-18 .property-icon, #space-19 .property-icon, /* Right Col */
+#space-32 .property-icon, #space-33 .property-icon, #space-34 .property-icon, #space-35 .property-icon, #space-37 .property-icon, #space-38 .property-icon, #space-39 .property-icon /* Left Col */ {
+    margin: 1px auto 0 auto; /* Already set in general rule, but explicit for clarity */
+    font-size: 1.4em; /* Matches new top/bottom, could be 1.3 if needed */
+    height: 1.4em; /* Matches new top/bottom, could be 1.3 if needed */
+}
+
+
+/* Name: Order 3 - Centered */
+#space-1 .name, #space-2 .name, #space-3 .name, #space-4 .name,
+#space-5 .name, #space-8 .name, #space-9 .name, /* Top Row */
+#space-21 .name, #space-22 .name, #space-23 .name, #space-24 .name,
+#space-28 .name, #space-29 .name, /* Bottom Row */
+#space-11 .name, #space-12 .name, #space-13 .name, #space-14 .name, #space-15 .name, #space-18 .name, #space-19 .name, /* Right Col */
+#space-32 .name, #space-33 .name, #space-34 .name, #space-35 .name,
+#space-37 .name, #space-38 .name, #space-39 .name /* Left Col (Removed duplicated bottom row selectors) */{
+    order: 3;
+    width: 100%; margin-top: 1px; margin-bottom: auto;
+    line-height: 1.1; padding-left: 1px; padding-right: 1px;
+}
+
+/* Specific line-height and margin for Top and Bottom row names */
+#space-1 .name, #space-2 .name, #space-3 .name, #space-4 .name, #space-5 .name, #space-8 .name, #space-9 .name,
+#space-21 .name, #space-22 .name, #space-23 .name, #space-24 .name, #space-28 .name, #space-29 .name {
+    line-height: 1.0; /* Adjusted line height */
+    margin-top: 0px; /* Bring closer to icon */
+}
+
+/* Price: Order 4 - Just above the bottom */
+#space-1 .price, #space-2 .price, #space-3 .price, #space-4 .price,
+#space-5 .price, #space-8 .price, #space-9 .price, /* Top Row */
+#space-21 .price, #space-22 .price, #space-23 .price, #space-24 .price, #space-28 .price, #space-29 .price, /* Bottom Row */
+#space-11 .price, #space-12 .price, #space-13 .price, #space-14 .price, #space-15 .price, #space-18 .price, #space-19 .price, /* Right Col */
+#space-32 .price, #space-33 .price, #space-34 .price, #space-35 .price, #space-37 .price, #space-38 .price, #space-39 .price /* Left Col */ {
+    order: 4;
+    margin-top: auto; /*margin-bottom: 10px; General rule */
+    display: block; margin-left: auto; margin-right: auto;
+    width: fit-content; padding-left: 6px; padding-right: 6px;
+}
+
+/* Specific margin-bottom for price tags based on row type */
+/* Top and Bottom rows (100px tall) */
+#space-1 .price, #space-2 .price, #space-3 .price, #space-4 .price, #space-5 .price, #space-8 .price, #space-9 .price,
+#space-21 .price, #space-22 .price, #space-23 .price, #space-24 .price, #space-28 .price, #space-29 .price {
+    margin-bottom: 5px; 
+}
+
+/* Side columns (80px tall) */
+#space-11 .price, #space-12 .price, #space-13 .price, #space-14 .price, #space-15 .price, #space-18 .price, #space-19 .price, /* Right */
+#space-32 .price, #space-33 .price, #space-34 .price, #space-35 .price, #space-37 .price, #space-38 .price, #space-39 .price /* Left */ {
+    margin-bottom: 2px;
+}
+
+/* Styling for centered names on yellow-boardname cards */
+.yellow-boardname .name {
+    width: 100%;
+    margin-top: auto; /* Center vertically if it's the only main content */
+    margin-bottom: auto; /* Center vertically */
+    /* text-align: center; is inherited from .space */
+}
+
+/* New animation for doubles pulse */
+.dice-double-pulse .die {
+    animation: blue-pulse-animation 0.5s 2; /* 0.5s duration, run twice */
+}
+
+@keyframes blue-pulse-animation {
+    0% { box-shadow: 0 0 5px #fff, 0 0 10px #fff; background-color: #fff; }
+    50% { box-shadow: 0 0 15px #007bff, 0 0 30px #007bff; background-color: #add8e6; } /* Blue pulse */
+    100% { box-shadow: 0 0 5px #fff, 0 0 10px #fff; background-color: #fff; }
+}
+
+/* Center content for Fake PIP declined card */
+#space-5 {
+    justify-content: center; /* Vertically center content in the flex container */
+    align-items: center; /* Ensure horizontal centering as well, though parent .space already does this */
+    padding-top: 3px; /* Lower icon and name a little */
+}
+
+#space-5 .name {
+    text-align: center; /* Explicitly center text within the name div */
+    width: 100%; /* Ensure it can use the full width for centering */
+    margin-top: 0; /* Remove any top margin that might push it down */
+    margin-bottom: 0; /* Remove any bottom margin */
+}
+
+/* Animation for auto-roll countdown pulse (ensure this is the correct one) */
+.dice-countdown-pulse-active {
+    animation: dice-countdown-pulse-animation 0.4s 1; /* Short, distinct pulse */
+    transform-origin: center;
+}
+
+@keyframes dice-countdown-pulse-animation {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 5px var(--current-player-dice-color, #fff), 0 0 10px var(--current-player-dice-color, #fff);
+    }
+    50% {
+        transform: scale(1.15);
+        box-shadow: 0 0 12px var(--current-player-dice-color, #4CAF50), 0 0 25px var(--current-player-dice-color, #4CAF50); /* Brighter pulse, green as default */
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 5px var(--current-player-dice-color, #fff), 0 0 10px var(--current-player-dice-color, #fff);
+    }
+}
+
+/* DWP Icon for Payout: Job Seeker's card */
+.dwp-icon {
+    color: #2ecc71; /* Green color */
+    font-weight: bold;
+    font-size: 1.4em; /* Slightly larger than normal text */
+    margin-bottom: 3px; /* Space below the icon */
+    line-height: 1;
+}
+
+/* New animation for Roll Dice button countdown pulse */
+.roll-button-countdown-pulse-active {
+    animation: roll-button-pulse-animation 0.4s 1;
+}
+
+@keyframes roll-button-pulse-animation {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 5px var(--current-player-dice-color, #fff), 0 0 10px var(--current-player-dice-color, #fff);
+    }
+    50% {
+        transform: scale(1.15);
+        box-shadow: 0 0 12px var(--current-player-dice-color, #4CAF50), 0 0 25px var(--current-player-dice-color, #4CAF50); /* Brighter pulse, green as default */
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 5px var(--current-player-dice-color, #fff), 0 0 10px var(--current-player-dice-color, #fff);
+    }
+}
+
+/* --- Crime Spree Space Styling --- */
+.crime-spree-space {
+    /* Optionally add a border or effect to the whole space */
+    box-shadow: 0 0 12px 2px #e74c3c99;
+    border: 2px solid #e74c3c;
+    border-radius: 7px;
+}
+.crime-spree-name {
+    background: #e74c3c;
+    color: #ffffff !important;
+    font-weight: bold;
+    font-size: 1.15em;
+    padding: 3px 7px;
+    border-radius: 5px;
+    box-shadow: 0 2px 8px #a00a, 0 0 0 2px #fff2;
+    letter-spacing: 0.04em;
+    /* Use only a dark shadow for contrast */
+    text-shadow: 1px 1px 3px #222, 0 0 2px #222;
+    margin-top: 2px;
+    margin-bottom: 2px;
+    display: inline-block;
+}
+
+/* Ensure the name text is white in all contexts */
+.space .name.crime-spree-name {
+    color: #ffffff !important;
+}
+
+#roll-dice-button {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    padding: 0;
+    background-color: #2ecc71;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 10px auto;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+#roll-dice-button i {
+    font-size: 28px;
+    color: #e74c3c !important;
+}
+
+#roll-dice-button:hover {
+    background-color: #27ae60;
+    transform: scale(1.1) rotate(15deg);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+}
+
+#roll-dice-button:disabled {
+    background-color: #95a5a6 !important;
+    transform: none;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+#end-turn-button {
+    background-color: #d35400;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin: 10px auto;
+    padding: 10px 20px;
+}
+
+#end-turn-button:hover {
+    background-color: #e67e22;
+}
+
+#end-turn-button:disabled {
+    background-color: #d35400 !important;
+    opacity: 0.5;
+}
+
+#end-turn-button i {
+    font-size: 16px;
+}
+
+#buy-property-button {
+    background-color: #1a237e !important; /* Dark blue */
+    color: white !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+    border: 2px solid #219a52;
+    font-size: 1.1em;
+    min-width: 0;
+    white-space: nowrap;
+}
+
+#buy-property-button:hover {
+    filter: brightness(85%);
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+}
+
+#buy-property-button i {
+    font-size: 1.1em;
+    color: #fff;
+    margin-right: 6px;
+}
+
+#buy-property-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 2px 2px 0 0;
+}
+
+@keyframes roll-button-pulse {
+    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.7); }
+    70% { transform: scale(1.05); box-shadow: 0 0 10px 15px rgba(231, 76, 60, 0); }
+    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(231, 76, 60, 0); }
+}
+
+@keyframes develop-button-pulse {
+    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0, 102, 204, 0.7); } /* rgba derived from #0066CC */
+    70% { transform: scale(1.03); box-shadow: 0 0 7px 10px rgba(0, 102, 204, 0); } /* Slightly more subtle pulse */
+    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0, 102, 204, 0); }
+}
+
+#roll-dice-button.pulse {
+    animation: roll-button-pulse 1.5s infinite;
+}
+
+#game-status-history {
+    text-align: left;
+    line-height: 1.3;
+}
+
+#game-status-history .status-entry {
+    padding: 4px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+#game-status-history .status-entry:last-child {
+    border-bottom: none;
+}
+
+#game-status-history .status-time {
+    color: #95a5a6;
+    font-size: 0.85em;
+    margin-right: 6px;
+}
+
+#game-status-history .status-text {
+    color: #bdc3c7;
+}
+
+#game-status-message-container h4 {
+    margin: 0 0 8px 0;
+    color: #ecf0f1;
+}
+
+/* Custom icons for specific spaces */
+.wheelchair-icon, .license-icon {
+    position: absolute;
+    top: 2px;
+    font-size: 14px;
+    color: #fff;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+    z-index: 2;
+}
+
+.wheelchair-icon {
+    color: #3498db;
+}
+
+.license-icon {
+    color: #e74c3c;
+}
+
+#player-info {
+    position: relative;
+}
+
+#auto-buy-toggle {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    padding: 5px;
+    border-radius: 4px;
+    opacity: 0.7;
+    transition: all 0.3s;
+    background-color: #34495e;
+    color: #95a5a6;
+    border: 1px solid #95a5a6;
+    user-select: none;
+}
+
+#auto-buy-toggle:hover {
+    opacity: 1;
+}
+
+#auto-buy-toggle.active {
+    background-color: #27ae60;
+    color: white;
+    border-color: #2ecc71;
+    opacity: 1;
+}
+
+.development-indicator .fa-city {
+    color: #000000;
+    font-size: 1.2em;
+    text-shadow: 0 2px 4px rgba(255,255,255,0.3);
+}
+
+button .fa-city {
+    color: inherit;
+    margin: 0 4px;
+}
+
+/* PR Building Icon Animation */
+.development-indicator .fa-city {
+    animation: pr-building-shine 2s infinite ease-in-out;
+}
+
+@keyframes pr-building-shine {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.85; transform: scale(1.05); }
+}
+
+#player-info span.cash-total {
+    margin-right: 0px;
+}
+
+.dole-bonus {
+    position: absolute;
+    bottom: 0px;
+    left: 48px;
+    font-size: 16px;
+    color: #000000; /* Changed from #f1c40f to black */
+    font-weight: 900; /* Changed from bold to 900 for thicker text */
+    z-index: 3;
+    background: rgba(255, 255, 255, 0.8); /* Changed to white background for better contrast */
+    padding: 2px 6px;
+    border-radius: 4px;
+    text-shadow: 1px 1px 1px rgba(255, 255, 255, 0.5); /* Changed to white shadow for better visibility */
+    letter-spacing: 0.5px; /* Added letter spacing for better readability */
+}
+
+@keyframes doleBonusFlash {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.5); opacity: 0.8; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.dole-bonus.flash {
+    animation: doleBonusFlash 0.5s ease-in-out;
+}
+
+/* Temporary smoke effect when landing on Crack House */
+.smoke-container {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    pointer-events: none;
+    z-index: 25;
+    width: 0;
+    height: 0;
+    overflow: visible;
+}
+
+.smoke-puff {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 14px;
+    height: 14px;
+    background: radial-gradient(ellipse at center, #d6d6d6 0%, rgba(255,255,255,0) 70%);
+    border-radius: 50%;
+    opacity: 0.8;
+    transform: translateX(-50%) scale(0.6);
+    animation: smoke-rise 3s forwards;
+}
+
+@keyframes smoke-rise {
+    0% { opacity: 0.8; transform: translate(-50%, 0) scale(0.6); }
+    100% { opacity: 0; transform: translate(-50%, -40px) scale(1.6); }
+}
+
+.dice-pulse {
+    animation: dicePulse 0.5s ease-in-out;
+}
+
+@keyframes dicePulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.2);
+    }
+    100% {
+        transform: scale(1);
+    }
+}

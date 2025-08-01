@@ -167,12 +167,12 @@ function updateProgress(percentage: number): void {
 // API functions
 async function checkProviders(): Promise<void> {
     try {
-        // This would normally check actual AI provider endpoints
+        // Check actual configured AI providers
         providers = [
-            { name: 'OpenAI', available: true },
-            { name: 'Claude', available: false },
-            { name: 'Gemini', available: true },
-            { name: 'Local LLM', available: false }
+            { name: 'XAI', available: true },
+            { name: 'DeepSeek', available: true },
+            { name: 'OpenAI', available: false },
+            { name: 'Claude', available: false }
         ];
         updateProviderStatus();
         // Update researcher agent status when providers are checked
@@ -185,19 +185,37 @@ async function checkProviders(): Promise<void> {
 
 async function cloneProject(url: string): Promise<void> {
     try {
-        updateAgentStatus('codemaniac', 'working', `Cloning project from ${url}...`);
+        if (!url || !url.trim()) {
+            throw new Error('Please enter a repository URL or local path');
+        }
+        
+        const isLocalPath = !url.startsWith('http');
+        const actionText = isLocalPath ? 'Loading local project' : 'Cloning repository';
+        
+        updateAgentStatus('codemaniac', 'working', `${actionText}: ${url}...`);
         updateProgress(25);
         
+        console.log('Attempting to clone:', url.trim());
         const response = await fetch('/api/project/clone', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url })
+            body: JSON.stringify({ url: url.trim() })
         });
         
-        if (response.ok) {
-            updateAgentStatus('codemaniac', 'working', 'Project cloned successfully');
+        console.log('Response status:', response.status);
+        console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+        
+        let result;
+        try {
+            result = await response.json();
+        } catch (parseError) {
+            throw new Error(`Server response error: ${response.status} ${response.statusText}`);
+        }
+        
+        if (response.ok && result.success) {
+            updateAgentStatus('codemaniac', 'working', result.message);
             updateProgress(100);
-            showNotification('Project cloned successfully!');
+            showNotification(result.message);
             
             // Enable buttons
             const startBtn = document.getElementById('start-btn') as HTMLButtonElement;
@@ -208,12 +226,21 @@ async function cloneProject(url: string): Promise<void> {
             if (analyzeBtn) analyzeBtn.disabled = false;
             if (exportBtn) exportBtn.disabled = false;
         } else {
-            throw new Error('Clone failed');
+            const errorMsg = result?.error || `HTTP ${response.status}: ${response.statusText}`;
+            throw new Error(errorMsg);
         }
     } catch (error) {
-        console.error('Clone error:', error);
-        updateAgentStatus('codemaniac', 'error', 'Failed to clone project');
-        showNotification('Failed to clone project', 'error');
+        console.error('Clone/Load error:', error);
+        let errorMessage = 'Unknown error occurred';
+        
+        if (error instanceof Error) {
+            errorMessage = error.message;
+        } else if (typeof error === 'string') {
+            errorMessage = error;
+        }
+        
+        updateAgentStatus('codemaniac', 'error', `Failed: ${errorMessage}`);
+        showNotification(`Failed to load project: ${errorMessage}`, 'error');
         updateProgress(0);
     }
 }
