@@ -35,6 +35,8 @@ class AgentSmithOpsHub {
   private currentHistoryIndex: number = -1;
   private projectFiles: Map<string, string> = new Map(); // Store project files
   private projectStructure: string[] = []; // Store file paths
+  private taskList: { id: string; description: string; completed: boolean; agent?: string }[] = []; // Track tasks and completion
+  private currentTaskId: number = 0; // Counter for task IDs
 
   constructor() {
     // API keys are handled server-side via proxy
@@ -139,7 +141,20 @@ class AgentSmithOpsHub {
                                message.toLowerCase().includes('no specific assignment');
       type = isSpeakingToUser ? 'smith-user' : 'smith';
     }
-    else if (sender.startsWith('Agent')) type = 'worker';
+    else if (sender.startsWith('Agent')) {
+      // Assign different colors to each worker agent
+      if (sender.includes('Agent A') || sender.includes('Fixer')) {
+        type = 'worker-a';
+      } else if (sender.includes('Agent B') || sender.includes('Debugger')) {
+        type = 'worker-b';
+      } else if (sender.includes('Agent C') || sender.includes('Optimizer')) {
+        type = 'worker-c';
+      } else if (sender.includes('Agent D') || sender.includes('CodeManiac')) {
+        type = 'worker-d';
+      } else {
+        type = 'worker'; // fallback for other agents
+      }
+    }
     else if (sender.toLowerCase().includes('error')) type = 'error';
 
     const logLine = document.createElement('div');
@@ -300,6 +315,16 @@ class AgentSmithOpsHub {
     this.setAgentStatus(agentId, 'working');
     const agent = this.agents[agentId];
     this.logToTerminal(agent.name, `Acknowledged. Executing: "${task.substring(0, 70)}..."`);
+
+    // Find and mark the corresponding task as completed
+    const taskToComplete = this.taskList.find(t => 
+      t.description.toLowerCase().includes(task.toLowerCase().substring(0, 30)) ||
+      (t.agent && t.agent.includes(agent.name))
+    );
+    if (taskToComplete) {
+      this.completeTask(taskToComplete.id);
+      this.logToTerminal('AgentSmith', `✅ Task completed: ${taskToComplete.description}`);
+    }
 
     try {
         const projectContext = `Project: ${this.projectSourceInput.value || 'the specified project'}`;
@@ -555,6 +580,14 @@ REPORT FORMAT: Provide specific findings with file paths, line numbers, and acti
         }
 
         if (workerIds.length > 0) {
+          // Create tasks for each assigned worker
+          workerIds.forEach(workerId => {
+            const agent = this.agents[workerId];
+            const taskDescription = this.getTaskDescription(smithsPlan, agent.role);
+            this.addTask(taskDescription, agent.name);
+            this.logToTerminal('AgentSmith', `📋 New task created: ${taskDescription}`);
+          });
+
           const results = await Promise.all(
             workerIds.map(id =>
               this.delegateToWorker(id, smithsPlan)
@@ -601,7 +634,76 @@ REPORT FORMAT: Provide specific findings with file paths, line numbers, and acti
     this.terminal.innerHTML = '';
     this.instructionHistoryList.innerHTML = '';
     this.tempLocationEl.textContent = 'N/A - No Active Process';
+    this.taskList = []; // Reset task list
+    this.currentTaskId = 0; // Reset task counter
     Object.keys(this.agents).forEach(id => this.setAgentStatus(id as keyof typeof this.agents, 'idle'));
+  }
+
+  private addTask(description: string, agent?: string): string {
+    this.currentTaskId++;
+    const taskId = `task-${this.currentTaskId}`;
+    this.taskList.push({
+      id: taskId,
+      description,
+      completed: false,
+      agent
+    });
+    this.displayTaskList();
+    return taskId;
+  }
+
+  private completeTask(taskId: string) {
+    const task = this.taskList.find(t => t.id === taskId);
+    if (task) {
+      task.completed = true;
+      this.displayTaskList();
+    }
+  }
+
+  private displayTaskList() {
+    // Find or create task list container
+    let taskListContainer = document.getElementById('task-list-container');
+    if (!taskListContainer) {
+      taskListContainer = document.createElement('div');
+      taskListContainer.id = 'task-list-container';
+      taskListContainer.className = 'task-list-panel';
+      taskListContainer.innerHTML = '<h3>📋 AgentSmith Task List</h3>';
+      
+      // Insert after the terminal panel
+      const terminalPanel = document.querySelector('.terminal-panel');
+      if (terminalPanel && terminalPanel.parentNode) {
+        terminalPanel.parentNode.insertBefore(taskListContainer, terminalPanel.nextSibling);
+      }
+    }
+
+    // Clear existing task items
+    const existingItems = taskListContainer.querySelectorAll('.task-item');
+    existingItems.forEach(item => item.remove());
+
+    // Add task items
+    this.taskList.forEach(task => {
+      const taskItem = document.createElement('div');
+      taskItem.className = `task-item ${task.completed ? 'completed' : ''}`;
+      
+      const checkbox = document.createElement('span');
+      checkbox.className = 'task-checkbox';
+      checkbox.textContent = task.completed ? '✅' : '⬜';
+      
+      const description = document.createElement('span');
+      description.className = 'task-description';
+      description.textContent = task.description;
+      
+      const agentInfo = document.createElement('span');
+      agentInfo.className = 'task-agent';
+      if (task.agent) {
+        agentInfo.textContent = ` → ${task.agent}`;
+      }
+      
+      taskItem.appendChild(checkbox);
+      taskItem.appendChild(description);
+      taskItem.appendChild(agentInfo);
+      taskListContainer.appendChild(taskItem);
+    });
   }
 
   private resetControls(isStarting: boolean) {
@@ -949,6 +1051,20 @@ npm start
     return `// ${filePath}
 // Sample content for analysis
 console.log('Hello from ${filePath}');`;
+  }
+
+  private getTaskDescription(plan: string, agentRole: AgentRole): string {
+    if (plan.includes('Assign Debugger')) {
+      return `Scan project structure and identify critical files for security audit.`;
+    } else if (plan.includes('Assign Optimizer')) {
+      return `Analyze performance bottlenecks, database queries, memory usage.`;
+    } else if (plan.includes('Assign Fixer')) {
+      return `Implement security patches and code improvements.`;
+    } else if (plan.includes('Assign CodeManiac')) {
+      return `Provide innovative solutions and creative refactoring.`;
+    } else {
+      return `Perform analysis based on the provided plan.`;
+    }
   }
 
   public togglePause() {

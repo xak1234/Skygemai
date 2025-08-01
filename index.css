@@ -284,6 +284,10 @@ input[type="text"]::placeholder {
 #terminal .log-smith { color: var(--accent-blue); }
 #terminal .log-smith-user { color: var(--accent-green); }
 #terminal .log-worker { color: var(--accent-green); }
+#terminal .log-worker-a { color: #ff8c42; } /* Agent A (Fixer) - Orange */
+#terminal .log-worker-b { color: #c678dd; } /* Agent B (Debugger) - Purple */
+#terminal .log-worker-c { color: #56b6c2; } /* Agent C (Optimizer) - Cyan */
+#terminal .log-worker-d { color: #e06c75; } /* Agent D (CodeManiac) - Magenta */
 #terminal .log-error { color: var(--accent-red); }
 #terminal .log-system { color: var(--accent-yellow); }
 
@@ -377,6 +381,65 @@ footer {
 }
 .agent .agent-name {
     color: var(--text-primary);
+}
+
+/* Task List Styles */
+.task-list-panel {
+  background-color: var(--background-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 1rem;
+}
+
+.task-list-panel h3 {
+  margin: 0 0 1rem 0;
+  color: var(--accent-blue);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.task-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+  background-color: var(--background-tertiary);
+  border: 1px solid var(--border-color);
+  transition: all 0.3s ease;
+}
+
+.task-item.completed {
+  background-color: rgba(152, 195, 121, 0.1);
+  border-color: var(--accent-green);
+  opacity: 0.8;
+}
+
+.task-checkbox {
+  font-size: 1.2rem;
+  min-width: 1.5rem;
+  text-align: center;
+}
+
+.task-description {
+  flex-grow: 1;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+}
+
+.task-item.completed .task-description {
+  text-decoration: line-through;
+  color: var(--text-secondary);
+}
+
+.task-agent {
+  color: var(--accent-blue);
+  font-size: 0.8rem;
+  font-family: var(--font-mono);
+  font-style: italic;
 }
 
 @media (max-width: 768px) {
