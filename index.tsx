@@ -30,9 +30,11 @@ let systemStatus: SystemStatus = {
 };
 
 let agents: AgentStatus[] = [
-    { id: 'smith', name: '🧠 AgentSmith (Director)', status: 'idle', task: 'Waiting for instructions...' },
-    { id: 'codemaster', name: '⚡ CodeMaster', status: 'idle', task: 'Ready for rapid coding' },
-    { id: 'qualityguard', name: '🛡️ QualityGuard', status: 'idle', task: 'Ready for validation' }
+    { id: 'smith', name: '🧠 AgentSmith', status: 'idle', task: 'Waiting for instructions...' },
+    { id: 'agent-a', name: '🛠️ Agent A (Fixer)', status: 'idle', task: 'Ready for fixes' },
+    { id: 'agent-b', name: '🕵️ Agent B (Debugger)', status: 'idle', task: 'Ready for debugging' },
+    { id: 'agent-c', name: '🚀 Agent C (Optimizer)', status: 'idle', task: 'Ready for optimization' },
+    { id: 'agent-d', name: '🤖 Agent D (CodeManiac)', status: 'idle', task: 'Ready for creative solutions' }
 ];
 
 let providers: ProviderStatus[] = [];
@@ -1220,6 +1222,29 @@ function startPeriodicUpdates(): void {
     }, 20000); // Every 20 seconds
 }
 
+// Tab functionality for unified terminal
+function initializeTabs(): void {
+    const tabButtons = document.querySelectorAll('.tab-button');
+    const tabContents = document.querySelectorAll('.tab-content');
+    
+    tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const targetTab = button.getAttribute('data-tab');
+            
+            // Remove active class from all buttons and contents
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            tabContents.forEach(content => content.classList.remove('active'));
+            
+            // Add active class to clicked button and corresponding content
+            button.classList.add('active');
+            const targetContent = document.getElementById(`${targetTab}-tab`);
+            if (targetContent) {
+                targetContent.classList.add('active');
+            }
+        });
+    });
+}
+
 // Initialize application
 function initialize(): void {
     // Clear terminal and show only agent statuses
@@ -1237,6 +1262,7 @@ function initialize(): void {
     updateAgentStatusBar(); // Initialize the agent status bar with drag and drop
     setupEventListeners();
     checkProviders();
+    initializeTabs(); // Initialize tab functionality
     
     // Start periodic investigation updates
     startPeriodicUpdates();
